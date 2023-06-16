@@ -1,0 +1,83 @@
+% This file was created by matlab2tikz.
+%
+%The latest updates can be retrieved from
+%  http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz
+%where you can also make suggestions and rate matlab2tikz.
+%
+\definecolor{mycolor1}{rgb}{0.00000,0.44700,0.74100}%
+\definecolor{mycolor2}{rgb}{0.85000,0.32500,0.09800}%
+\definecolor{mycolor3}{rgb}{0.9290, 0.6940, 0.1250}%
+%
+\begin{tikzpicture}
+
+\begin{axis}[%
+width=0.951\figurewidth,
+height=\figureheight,
+at={(0\figurewidth,0\figureheight)},
+scale only axis,
+xmin=0,
+xmax=300,
+xlabel style={font=\color{white!15!black},at={(axis description cs:0.5,-0.08)}},
+xlabel={Time [s]},
+ymode=log,
+ymin=1e-07,
+ymax=100,
+yminorticks=true,
+ylabel style={font=\color{white!15!black}},
+ylabel={Error [m]},
+axis background/.style={fill=white},
+every axis plot/.append style={line width=0.7pt},
+title style={font=\bfseries, yshift=-2mm},
+title={Formation-keeping error norm},
+legend style={legend cell align=left, align=left, draw=white!15!black, font=\footnotesize}
+]
+\addplot [color=mycolor1]
+  table[]{formation_error_comparison-1.tsv};
+\addlegendentry{Novel second-order NSB}
+
+\addplot [color=mycolor1, dashed, forget plot]
+  table[]{formation_error_comparison-2.tsv};
+\addplot [color=mycolor1, dotted, forget plot]
+  table[]{formation_error_comparison-3.tsv};
+\addplot [color=mycolor1, dashdotted, forget plot]
+  table[]{formation_error_comparison-4.tsv};
+\addplot [color=mycolor2]
+  table[]{formation_second_order-5.tsv};
+\addlegendentry{Alternative second-order NSB}
+
+\addplot [color=mycolor2, dashed, forget plot]
+  table[]{formation_second_order-6.tsv};
+\addplot [color=mycolor2, dotted, forget plot]
+  table[]{formation_second_order-7.tsv};
+\addplot [color=mycolor2, dashdotted, forget plot]
+  table[]{formation_second_order-8.tsv};
+
+
+  
+% \addplot [color=mycolor3]
+%   table[]{formation_second_order-5.tsv};
+% \addlegendentry{Second-order NSB 2}
+% \addplot [color=mycolor3, dashed, forget plot]
+%   table[]{formation_second_order-6.tsv};
+% \addplot [color=mycolor3, dotted, forget plot]
+%   table[]{formation_second_order-7.tsv};
+% \addplot [color=mycolor3, dashdotted, forget plot]
+%   table[]{formation_second_order-8.tsv};
+\end{axis}
+
+\begin{axis}[%
+width=1.227\figurewidth,
+height=1.227\figureheight,
+at={(-0.16\figurewidth,-0.135\figureheight)},
+scale only axis,
+xmin=0,
+xmax=1,
+ymin=0,
+ymax=1,
+axis line style={draw=none},
+ticks=none,
+axis x line*=bottom,
+axis y line*=left
+]
+\end{axis}
+\end{tikzpicture}%

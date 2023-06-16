@@ -1,0 +1,109 @@
+% This file was created by matlab2tikz.
+%
+%The latest updates can be retrieved from
+%  http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz
+%where you can also make suggestions and rate matlab2tikz.
+%
+\definecolor{mycolor1}{rgb}{0.00000,0.44700,0.74100}%
+\definecolor{mycolor2}{rgb}{0.85000,0.32500,0.09800}%
+\definecolor{mycolor3}{rgb}{0.92900,0.69400,0.12500}%
+%
+\begin{tikzpicture}
+
+\begin{axis}[%
+unit vector ratio*=1 1 1,
+width=0.951\figurewidth,
+height=\figureheight,
+at={(0\figurewidth,0\figureheight)},
+scale only axis,
+xmin=-127.596669278219,
+xmax=62.5966692782195,
+xlabel style={font=\color{white!15!black}},
+xlabel={East [m]},
+ymin=0,
+ymax=150.007326700159,
+ylabel style={font=\color{white!15!black}},
+ylabel={North [m]},
+axis background/.style={fill=white},
+title style={font=\bfseries, yshift=-2mm},
+title={\textbf{Trajectory}},
+axis x line*=bottom,
+axis y line*=left,
+xmajorgrids,
+ymajorgrids,
+legend style={legend pos= north west,legend cell align=left, align=left, draw=white!15!black, font=\footnotesize}
+]
+\addplot [color=mycolor1, line width=1.0pt, mark size=3.5pt, mark=*, mark options={solid, fill=mycolor1, mycolor1}, mark repeat=50]
+  table[]{trajectory-1.tsv};
+\addlegendentry{Veh. 1}
+
+\addplot [color=mycolor2, line width=1.0pt, mark size=3.5pt, mark=*, mark options={solid, fill=mycolor2, mycolor2}, mark repeat=50]
+  table[]{trajectory-2.tsv};
+\addlegendentry{Veh. 2}
+
+\addplot [color=mycolor3, line width=1.0pt, mark size=3.5pt, mark=*, mark options={solid, fill=mycolor3, mycolor3}, mark repeat=50]
+  table[]{trajectory-3.tsv};
+\addlegendentry{Veh. 3}
+
+\addplot [color=black, line width=1.5pt]
+  table[]{trajectory-4.tsv};
+\addlegendentry{Path}
+
+\addplot [color=black, dotted, line width=0.8pt, forget plot]
+  table[]{trajectory-5.tsv};
+\addplot [color=black, dotted, line width=0.8pt, forget plot]
+  table[]{trajectory-6.tsv};
+\addplot [color=black, dotted, line width=0.8pt, forget plot]
+  table[]{trajectory-7.tsv};
+\addplot [color=black, dotted, line width=0.8pt, forget plot]
+  table[]{trajectory-8.tsv};
+\addplot [color=black, dotted, line width=0.8pt, forget plot]
+  table[]{trajectory-9.tsv};
+\addplot [color=black, dotted, line width=0.8pt, forget plot]
+  table[]{trajectory-10.tsv};
+\addplot [color=black, dotted, line width=0.8pt, forget plot]
+  table[]{trajectory-11.tsv};
+\addplot [color=black, dotted, line width=0.8pt, forget plot]
+  table[]{trajectory-12.tsv};
+\addplot [color=black, dotted, line width=0.8pt, forget plot]
+  table[]{trajectory-13.tsv};
+\addplot [color=black, dotted, line width=0.8pt, forget plot]
+  table[]{trajectory-14.tsv};
+\addplot [color=black, dotted, line width=0.8pt, forget plot]
+  table[]{trajectory-15.tsv};
+\addplot [color=black, dotted, line width=0.8pt, forget plot]
+  table[]{trajectory-16.tsv};
+\addplot [color=black, dotted, line width=0.8pt, forget plot]
+  table[]{trajectory-17.tsv};
+\addplot [color=black, dotted, line width=0.8pt, forget plot]
+  table[]{trajectory-18.tsv};
+\addplot [color=black, dotted, line width=0.8pt, forget plot]
+  table[]{trajectory-19.tsv};
+\addplot [color=black, dotted, line width=0.8pt, forget plot]
+  table[]{trajectory-20.tsv};
+\addplot [color=black, dotted, line width=0.8pt, forget plot]
+  table[]{trajectory-21.tsv};
+\addplot [color=black, dotted, line width=0.8pt, forget plot]
+  table[]{trajectory-22.tsv};
+\addplot [color=black, dotted, line width=0.8pt, forget plot]
+  table[]{trajectory-23.tsv};
+\addplot [color=black, dotted, line width=0.8pt, forget plot]
+  table[]{trajectory-24.tsv};
+\end{axis}
+
+\begin{axis}[%
+width=1.227\figurewidth,
+height=1.227\figureheight,
+at={(-0.16\figurewidth,-0.135\figureheight)},
+scale only axis,
+xmin=0,
+xmax=1,
+ymin=0,
+ymax=1,
+axis line style={draw=none},
+ticks=none,
+axis x line*=bottom,
+axis y line*=left
+]
+\end{axis}
+\end{tikzpicture}%

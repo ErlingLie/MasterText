@@ -1,0 +1,66 @@
+% This file was created by matlab2tikz.
+%
+%The latest updates can be retrieved from
+%  http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz
+%where you can also make suggestions and rate matlab2tikz.
+%
+\definecolor{mycolor1}{rgb}{0.00000,0.44700,0.74100}%
+\definecolor{mycolor2}{rgb}{0.85000,0.32500,0.09800}%
+%
+\begin{tikzpicture}
+
+\begin{axis}[%
+width=0.951\figurewidth,
+height=\figureheight,
+at={(0\figurewidth,0\figureheight)},
+scale only axis,
+xmin=0,
+xmax=250,
+xlabel style={font=\color{white!15!black}},
+xlabel={Time [s]},
+ymin=0,
+ymax=20,
+ylabel style={font=\color{white!15!black}, yshift=2mm},
+ylabel={Distance [m]},
+axis background/.style={fill=white},
+every axis plot/.append style={line width=0.7pt},
+title style={font=\bfseries, yshift=-2.75mm},
+title={Smallest distances},
+legend style={at={(0.97,0.02)}, anchor=south east, legend cell align=left, align=left, draw=white!15!black, legend columns=2,font=\footnotesize}
+]
+\addplot [color=mycolor1]
+  table[]{distributed_colav-1.tsv};
+\addlegendentry{Inter-vehicle distance}
+
+\addplot [color=mycolor2]
+  table[]{distributed_colav-2.tsv};
+\addlegendentry{Distance to obstacle}
+
+\addplot [color=black, dashed]
+  table[]{distributed_colav-3.tsv};
+\addlegendentry{$d_{\rm COLAV}$}
+
+
+\addplot[area legend, dashed, draw=black, fill=white!50!red, fill opacity=0.25, forget plot]
+table[] {distributed_colav-4.tsv}--cycle;
+
+\addplot[area legend, dashed, draw=black, fill=green, fill opacity=0.15, forget plot]
+table[] {distributed_colav-5.tsv}--cycle;
+\end{axis}
+
+\begin{axis}[%
+width=1.227\figurewidth,
+height=1.227\figureheight,
+at={(-0.16\figurewidth,-0.135\figureheight)},
+scale only axis,
+xmin=0,
+xmax=1,
+ymin=0,
+ymax=1,
+axis line style={draw=none},
+ticks=none,
+axis x line*=bottom,
+axis y line*=left
+]
+\end{axis}
+\end{tikzpicture}%

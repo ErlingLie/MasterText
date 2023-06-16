@@ -1,0 +1,60 @@
+% This file was created by matlab2tikz.
+%
+%The latest updates can be retrieved from
+%  http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz
+%where you can also make suggestions and rate matlab2tikz.
+%
+\definecolor{mycolor1}{rgb}{0.00000,0.44700,0.74100}%
+\definecolor{mycolor2}{rgb}{0.85000,0.32500,0.09800}%
+\definecolor{mycolor3}{rgb}{0.92900,0.69400,0.12500}%
+%
+\begin{tikzpicture}
+
+\begin{axis}[%
+width=0.951\figurewidth,
+height=\figureheight,
+at={(0\figurewidth,0\figureheight)},
+scale only axis,
+xmin=0,
+xmax=150,
+xlabel style={font=\color{white!15!black}},
+xlabel={Time [s]},
+ymin=0,
+ymax=70,
+ylabel style={font=\color{white!15!black}},
+ylabel={$\| \bm{\mu}\|$},
+axis background/.style={fill=white},
+title style={font=\bfseries},
+title={\textbf{Norm of hand-controller virtual input}},
+legend style={legend cell align=left, align=left, draw=white!15!black, font=\footnotesize}
+]
+\addplot [color=mycolor1]
+  table[]{restrepo_norm_mu-1.tsv};
+\addlegendentry{Vehicle 1}
+
+\addplot [color=mycolor2]
+  table[]{restrepo_norm_mu-2.tsv};
+\addlegendentry{Vehicle 2}
+
+\addplot [color=mycolor3]
+  table[]{restrepo_norm_mu-3.tsv};
+\addlegendentry{Vehicle 3}
+
+\end{axis}
+
+\begin{axis}[%
+width=1.227\figurewidth,
+height=1.227\figureheight,
+at={(-0.16\figurewidth,-0.135\figureheight)},
+scale only axis,
+xmin=0,
+xmax=1,
+ymin=0,
+ymax=1,
+axis line style={draw=none},
+ticks=none,
+axis x line*=bottom,
+axis y line*=left
+]
+\end{axis}
+\end{tikzpicture}%

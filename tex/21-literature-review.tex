@@ -1,0 +1,187 @@
+\chapter{Consensus algorithms}\label{cha:consensus_algorithms}
+\textcolor{DarkOrange}{Entire chapter is to be removed and merged with the literature review and simulation chapters.}
+This chapter will introduce consensus algorithms as a solution to formation keeping in multi-agent systems following double-integrator dynamics. The chapter will provide a brief overview of different methods found in the literature detailing differences and similarities. Then, one of the methods is presented in detail. The purpose of the chapter is to present alternative state-of-the-art methods different from the \gls{nsb} method which is the main focus of the rest of the thesis. Furthermore, ideas from the consensus methods presented here will be leveraged to design a distributed \gls{nsb} method later in Section~\ref{sec:distributed_NSB}.
+
+
+% The methods presented in this chapter are primarily trajectory-tracking methods and not path-following methods, which differ in that the trajectory-tracking problem has time constraints. In contrast, the path-following problem has an extra degree of freedom in the progress rate along the path.
+
+\section{Consensus methods overview}
+The consensus problem is a problem in which multiple agents must coordinate to reach a common value in some information state. The information state can be for instance position, velocity, or a path-progress parameter. The formation-path-following can be considered a special case of the consensus problem with the following objective:
+\begin{equation}
+    \lim_{t\rightarrow\infty} \mathbf{p}_i(t) - \mathbf{p}_j(t) - \mathbf{d}_{ij} = \mathbf{0},\quad \lim_{t\rightarrow\infty} \mathbf{v}_i(t) - \mathbf{v}_j(t) = \mathbf{0}.
+\end{equation}
+For single integrator systems, the general consensus controller will take the form
+\begin{align}\label{eq:first_order_consensus}
+    \dot{\mathbf{p}}_i &= \bm{\mu}_i,\\
+    \bm{\mu}_i &= -k \sum_{j\in\mathcal{N}_i}(\mathbf{p}_i-\mathbf{p}_j - \mathbf{d}_{ij}),
+\end{align}
+where $\mathcal{N}_i$ is the set of all neighboring agents of agent $i$. Consensus algorithms for double-integrator can be designed in many different ways, but typically contain terms that are similar to \eqref{eq:first_order_consensus}. A review of general consensus problems is found in \cite{ren_survey_2005}.
+
+The following sections primarily review the formation-keeping and trajectory-tracking method developed by \cite{restrepo_tracking--formation_2022}. The control law was developed directly to work with \glspl{asv} and \glspl{auv} equipped with the hand-position controller moving in the horizontal plane. It combines techniques from integrator backstepping, \gls{blf}, and sliding-mode-like switching control. While the paper primarily addresses the tracking of an external target vehicle, it can easily be adapted to track a predefined trajectory using a virtual target. The method can be applied to path-following by employing a leader-follower scheme, where the leader controls the progress along the path while the other vehicles act as followers. Moreover, in addition to addressing formation keeping and target tracking, the method explicitly tackles collision avoidance and the maintenance of a maximum communication range. The communication between neighboring agents is assumed to be undirected, allowing bidirectional information flow.
+
+We observe that the literature includes other consensus algorithms for multi-agent control of double-integrator dynamics. For instance, in \cite{miao_formation_2019}, a consensus algorithm is proposed where a controller utilizes the gradient of a potential field to maintain communication radius, resembling the concept of \gls{blf} in \cite{restrepo_tracking--formation_2022}. Despite using different notations, the control methods in both papers exhibit clear similarities. Furthermore, in \cite{montanez-molina_formation_2022}, a consensus algorithm is presented for formations with directed communication, employing a backstepping-like controller. Additionally, \cite{girejko_leader-following_2019} introduces a leader-follower tracking consensus controller with a virtual leader. In \cite{mohammadi_leader-following_2021}, a leader-follower tracking controller is proposed, where positions and velocities of the leader and other agents are estimated instead of being precisely known. Similar to \cite{restrepo_tracking--formation_2022}, a switching controller is applied to handle estimate uncertainties.
+
+
+All the mentioned works share commonalities in their consensus-based controllers. Therefore, we focus on providing a detailed exposition of the controller proposed by \cite{restrepo_tracking--formation_2022}. This particular controller stands out as it has been explicitly validated to be compatible with the hand-position controller and uniquely integrates three crucial aspects: collision avoidance, maintenance of communication range, and target tracking.
+
+\section{Method details}\label{sec:consensus_method}
+It is assumed that each agent only has access to local information from a limited number of neighbors. The communication is described by the connected, undirected graph $\mathcal{G}$ as introduced in Section~\ref{sec:graph_theory}.
+
+The method follows the so-called \textit{edge-agreement} representation. The output state of the system is the set of relative positions
+\begin{equation}
+    \mathbf{z}_{1k} = \mathbf{p}_i - \mathbf{p}_j \quad \forall k \leq M, \quad (i,j) \in \mathcal{E}.
+\end{equation}
+Each vehicle is equipped with a hand-position controller, and the dynamics are therefore perturbed by the unknown ocean current $\mathbf{v}_c$
+\begin{subequations}
+\begin{align}
+    \dot{\mathbf{p}}_i &= \mathbf{v}_i +\mathbf{v}_c,\\
+    \dot{\mathbf{v}}_i &= \bm{\mu}_i.
+\end{align}
+\end{subequations}
+
+To avoid collisions and maintain communication range, a minimal distance $\delta_k$ and maximal distance $\Delta_k$ are defined for each relative position, yielding the following output constraints
+\begin{equation}
+    \mathcal{D}_k = \left\{\mathbf{z}_{1k} \in \mathbb  {R}^2 \colon \delta_k < \| \mathbf{z}_{1k} \| < \Delta_k \right\}, \; \forall k \leq M.\label{eq:restrepo_constraints}
+\end{equation}
+
+The formation is supposed to track a target also modeled as a double integrator
+\begin{align}
+    \dot{\mathbf{p}}_o &= \mathbf{v}_o,\\
+    \dot{\mathbf{v}}_o &= \bm{\mu}_o.
+\end{align}
+It is assumed that only the first agent has access to the target's position and velocity, and the tracking error states are defined as
+\begin{equation}
+    \Tilde{\mathbf{z}}_{1o} \coloneqq \mathbf{p}_i - \mathbf{p}_o - \mathbf{z}_{1o}^d, \quad \mathbf{z}_{2o} \coloneqq \mathbf{v}_1 - \mathbf{v}_0,
+\end{equation}
+where $\mathbf{z}_{1o}^d$ is the desired displacement. Similarly, the formation error states are defined as
+\begin{align}
+    \Tilde{\mathbf{z}}_{1k} \coloneqq \mathbf{p}_i - \mathbf{p}_j - \mathbf{z}_{1k}^d, \quad \mathbf{z}_{2k} \coloneqq \mathbf{v}_1 - \mathbf{v}_j, \quad \forall k \leq M.
+\end{align}
+The full system can be described by the following set of equations
+\begin{subequations}
+\begin{align}
+    \dot{\tilde{\mathbf{z}}}_{1o} &= \mathbf{z}_{2o} + \mathbf{v}_c\label{eq:restrepo_track_error}\\
+    \dot{\tilde{\mathbf{z}}}_{1t} &= \mathbf{z}_{2t}\label{eq:restrepo_formation_error}\\
+    \dot{\mathbf{z}}_{2o} &= \bm{\mu}_1-\bm{\mu}_o (t)\\
+    \dot{\mathbf{z}}_{2t} &= [\mathbf{E}_t\T \otimes \mathbf{I}_2] \bm{\mu}.
+\end{align}
+\end{subequations}
+Here the states $\mathbf{z}_{1t}$ and $\mathbf{z}_{2t}$ are concatenated states corresponding to $N-1$ edges of a spanning tree $\mathcal{G}_t \subseteq \mathcal{G}$. The matrix $\mathbf{E}_t$ represents the incidence matrix of the spanning tree $\mathcal{G}_t$ so that $\mathbf{z}_{1t} =  [\mathbf{E}_t\T \otimes \mathbf{I}_2] \mathbf{p}$. More details on this formulation can be found in \cite{restrepo_tracking--formation_2022}. Since $N$ agents only have $2N$ positional degrees of freedom in the plane, and the tracking error state accounts for $2$ of them, only $N-1$ edges are necessary to fully represent the system state. The remaining edges can be obtained through the linear transform:
+\begin{equation}
+    \tilde{\mathbf{z}}_1 = [\mathbf{R}\T \otimes \mathbf{I}_2] \tilde{\mathbf{z}}_{1t}, \quad \mathbf{z}_2 = [\mathbf{R}\T \otimes \mathbf{I}_2] \mathbf{z}_{2t},
+\end{equation}
+where $\mathbf{R}$ is a matrix defined in \cite{restrepo_tracking--formation_2022}.
+
+The control design is based on a backstepping approach. First, a virtual control law for \eqref{eq:restrepo_track_error}-\eqref{eq:restrepo_formation_error} with $\mathbf{z}_{2o}$ and $\mathbf{z}_{2t}$ as inputs is defined. To account for the output constraints $\mathcal{D}_k$ in \eqref{eq:restrepo_constraints}, the virtual controller is designed in terms of the gradient of a \gls{blf}. \glspl{blf} are similar to Lyapunov functions in that they are positive definite, but their domain of definition is restricted to open subsets of the Euclidean space. They grow unbounded as $\mathbf{z}_{1k}$ approaches the boundary of their domain. By ensuring that the \gls{blf} is bounded in the closed loop, it is ensured that the states do not leave the domain of definition. We refer to \cite{tee_barrier_2009} for more details on \glspl{blf}. In this particular case, the domain for the \gls{blf} is defined in terms of the collision avoidance and communication constraints \eqref{eq:restrepo_constraints}:
+\begin{equation}
+    \mathcal{\Tilde{D}}_k = \left\{\mathbf{\Tilde{z}}_{1k} \in \mathbb  {R}^2 \colon \delta_k < \| \mathbf{\Tilde{z}}_{1k} + \mathbf{z}_{1k}^d \| < \Delta_k \right\}.
+\end{equation}
+For each $k\leq M$, a candidate \gls{blf} $W_k \colon \mathcal{\Tilde{D}}_k \rightarrow \mathbb{R}_{\geq 0}$ is defined:
+\begin{equation}
+    W_k(\Tilde{\mathbf{z}}_{1k}) = \frac{1}{2}\left(\|\tilde{\mathbf{z}}_{1k}\| + B_k(\tilde{\mathbf{z}}_{1k}+z_{1k}^d)\right),
+\end{equation}
+where $B_k(\mathbf{z}_{1k})$ is a non-negative defined in \cite{restrepo_tracking--formation_2022} that satisfies $B_k(\mathbf{z}_{1k}^d) = 0$, $\nabla B_k(\mathbf{z}_{1k}^d) = 0$, and $B_k(\mathbf{z}_{1k}) \rightarrow  \infty$ as either $\|\mathbf{z}_{1k}\| \rightarrow \Delta_k$ or $\|\mathbf{z}_{1k}\| \rightarrow \delta_k$.
+
+The virtual controllers are given by
+\begin{subequations}
+    \begin{align}
+        \mathbf{z}_{2t}^* &= [\mathbf{E}_t\T \otimes \mathbf{I}_2]\mathbf{v}^*,\\
+        \mathbf{z}_{2o}^* &= [\mathbf{C}\T \otimes \mathbf{I}_2]\mathbf{v}^*,\\
+        \mathbf{v}^* &= -c_1 [\mathbf{E}_t \otimes \mathbf{I}_2]\nabla W(\tilde{\mathbf{z}}_{1t}) - c_1 [\mathbf{C} \otimes \mathbf{I}_2]\tilde{\mathbf{z}}_{1o} - \hat{\mathbf{V}}_c,
+    \end{align}
+\end{subequations}
+where $c_1$ is a positive gain, $\hat{\mathbf{V}}_c$ is a stacked vector of estimates of the ocean current for each agent, and $\mathbf{C} \coloneqq [1\; 0_{1\times(N-1)}]\T$. The following error variables are defined in terms of the virtual controllers: $\tilde{\mathbf{z}}_{2t} = \mathbf{z}_{2t} - \mathbf{z}_{2t}^*$ and $\tilde{\mathbf{z}}_{2o} = \mathbf{z}_{2o} - \mathbf{z}_{2o}^*$.
+
+The total control law is chosen as
+\begin{equation}\label{eq:restrepo_controller}
+    \begin{split}
+        \bm{\mu} = &-c_2 [\mathbf{E}_t \mathbf{R}\mathbf{R}\T \otimes \mathbf{I}_2]\tilde{\mathbf{z}}_{2t} - c_2 [\mathbf{C}\otimes \mathbf{I}_2]\tilde{\mathbf{z}}_{2o} + \dot{\Bar{\mathbf{v}}}^*\\
+        &- \gamma \mathrm{sign}\left([\mathbf{E}_t \mathbf{R}\mathbf{R}\T \otimes \mathbf{I}_2]\tilde{\mathbf{z}}_{2t} + [\mathbf{C}\otimes \mathbf{I}_2]\tilde{\mathbf{z}}_{2o}\right),
+    \end{split}
+\end{equation}
+where $c_2, \gamma > 0$ and $\bar{\mathbf{v}}^* = -c_1 [\mathbf{E}_t \otimes \mathbf{I}_2]\nabla W(\tilde{\mathbf{z}}_{1t}) - c_1 [\mathbf{C} \otimes \mathbf{I}_2]\tilde{\mathbf{z}}_{1o}$. The term with the signum function is a sliding-mode-like term that ensures perfect tracking despite the unknown target acceleration $\bm{\mu}_o$. It might be difficult to recognize how this is a consensus algorithm similar to \eqref{eq:first_order_consensus}, however, the control law can be rewritten as 
+\begin{equation}
+    \begin{split}
+        \bm{\mu} = &-c_2 [\mathbf{L} \otimes \mathbf{I}_2](\mathbf{v} - \mathbf{v}^*) - c_2 [\mathbf{C}\otimes \mathbf{I}_2]\tilde{\mathbf{z}}_{2o} + \dot{\Bar{\mathbf{v}}}^*\\
+        &- \gamma \mathrm{sign}\left([\mathbf{L} \otimes \mathbf{I}_2](\mathbf{v} - \mathbf{v}^*) + [\mathbf{C}\otimes \mathbf{I}_2]\tilde{\mathbf{z}}_{2o}\right),
+    \end{split}
+\end{equation}
+where $\mathbf{L} = \mathbf{E}_t \mathbf{R} \mathbf{R}\T \mathbf{E}_t\T$ is the Laplacian matrix \eqref{eq:laplacian_matrix} of graph $\mathcal{G}$. One can therefore recognize that each element $\mathbf{u}_i$ in the vector $\mathbf{u} =  -c_2[\mathbf{L} \otimes \mathbf{I}_2](\mathbf{v}-\mathbf{v}^*)$ takes the following form
+\begin{equation}
+    \mathbf{u}_i = -c_2\sum_{j\in \mathcal{N}_i} (\mathbf{v}_i - \mathbf{v}_j) + c_2\sum_{j\in \mathcal{N}_i} (\mathbf{v}_i^* - \mathbf{v}_j^*),
+\end{equation}
+which is a consensus term in velocity for each agent similar to \eqref{eq:first_order_consensus}.
+
+\section{Properties and performance}
+The algorithm guarantees that the fleet converges to the desired formation and tracks the target without violating collision avoidance and communication range constraints. The method explicitly takes communication limitations into account and allows multiple different communication topologies. The controller \eqref{eq:restrepo_controller} can be implemented in a distributed manner, where each agent only knows the relative position of its neighbors according to the communication graph $\mathcal{G}$.
+
+We implement the control law in the MATLAB simulator detailed in Chapter~\ref{cha:sim_matlab}. The control law \eqref{eq:restrepo_controller} is trivially extended to 3D by replacing all instances of $\mathbf{I}_2$ with $\mathbf{I}_3$ in the Kronecker products. The proof that this works for the external states of the hand-position controller follows directly from \cite{restrepo_tracking--formation_2022}, and the ultimate boundedness of the internal dynamics of the hand-position controller can be derived by combining results from \cite{restrepo_tracking--formation_2022} and \cite{matous_trajectory_2023}. The simulation setup is very similar to that in Section~\ref{sec:general_three_agent}, but there is no external obstacle, and the path parameter is given as a function of time $\xi = t$ to yield a trajectory tracking problem instead of a path-following problem. The fleet is supposed to track a virtual target with a relative displacement specified so the virtual target is at the fleet barycenter. The minimum and maximum distances between vehicles are defined as $\delta = 8 \mathrm{m}$ and $\Delta = 35 \mathrm{m}$.
+
+The initial formation is specified with the vehicles at the opposite side of the fleet center compared to the desired formation. Thus, the collision avoidance performance is tested thoroughly. As can be seen from Figure~\ref{fig:restrepo_relative_distances}, the relative distance between vehicles 2 and 3, denoted by \textit{edge 2} drops below $\delta$. One possible reason for this is that the implemented system uses a smooth approximation to the signum function $\mathrm{sign}(x) = \mathrm{tanh}(\alpha x), \; \alpha >> 0$. Consequently, some of the theoretical guarantees may be lost. Also, simulations with switching behavior are prone to numerical errors. The system was tested with a range of different $\alpha$s with similar results. After the initial constraint violation, the vehicles recover the desired formation, and the formation-keeping error converges to zero as seen in Figure~\ref{fig:restrepo_formation_error}.
+
+Figure~\ref{fig:restrepo_trajectory} shows the trajectory of the fleet. The path is accurately tracked after the initial convergence. The formation remains orthogonal to the \gls{ned}-frame and not the path-tangential frame. This is a natural consequence of only the first vehicle having access to the target vehicle. Furthermore, if the target vehicle is a physical vehicle and not a predefined virtual one, online estimation of the path-tangential frame and its derivatives may be difficult. If the trajectory was accessible to all vehicles instead, it would be possible to modify the algorithm so that the formation is kept relative to the path-tangential frame by specifying $\mathbf{z}_1^d$ as a time-varying function of the trajectory. However, without this limiting assumption, there may also exist other control methods that are better suited.
+
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[t]{.9\textwidth}
+    \centering
+    \setlength\figurewidth{.5\linewidth}
+    \setlength\figureheight{5.2 cm}
+    \input{tikz_figures/trajectory}
+    \vspace*{-2mm}
+    \caption{The trajectory of the fleet.}
+    \label{fig:restrepo_trajectory}
+    \end{subfigure}
+    \\
+    \begin{subfigure}[t]{.9\textwidth}
+    \centering
+    \setlength\figurewidth{.8\linewidth}
+    \setlength\figureheight{2.1cm}
+    \input{tikz_figures/relative_distances}
+    \vspace*{-2mm}
+    \caption{The relative distances between vehicles. }
+    \label{fig:restrepo_relative_distances}
+    \end{subfigure}
+    \\
+    \begin{subfigure}[t]{.9\textwidth}
+    \centering
+    \setlength\figurewidth{.8\linewidth}
+    \setlength\figureheight{2.1cm}
+    \input{tikz_figures/formation_error}
+    \vspace*{-2mm}
+    \caption{The formation error norms.}
+    \label{fig:restrepo_formation_error}
+    \end{subfigure}
+    \vspace*{-2mm}
+    \caption{Simulation results for the edge-agreement-based formation control algorithm.}
+    \label{fig:sim_results_restrepo}
+\end{figure}
+
+Except for the constraint violation, the simulation results look promising as the fleet converges to the formation and tracks the target. However, further inspection shows that the controller commands unphysical actuation. Figure~\ref{fig:restrepo_surge_thrust} shows that the commanded surge thrust peaks at $1000 \, \mathrm{N}$ and goes negative for some vehicles.  As seen in Figure~\ref{fig:restrepo_norm_mu}, this is a result of the formation-keeping controller commanding excessively large virtual control inputs to the hand-position controller while the fleet is at the collision avoidance constraint border as seen in Figure~\ref{fig:restrepo_relative_distances}. Deploying this controller to a physical system would work poorly due to actuator saturation, and it would put excessive strain on the mechanical parts of the actuators.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[t]{.9\textwidth}
+    \centering
+    \setlength\figurewidth{.8\linewidth}
+    \setlength\figureheight{3 cm}
+    \input{tikz_figures/restrepo_norm_mu}
+    \vspace*{-2mm}
+    \caption{The virtual control input $\bm{\mu}$ to the hand-position controller.}
+    \label{fig:restrepo_norm_mu}
+    \end{subfigure}
+    \\
+    \begin{subfigure}[t]{.9\textwidth}
+    \centering
+    \setlength\figurewidth{.8\linewidth}
+    \setlength\figureheight{3cm}
+    \input{tikz_figures/restrepo_surge_thrust}
+    \vspace*{-2mm}
+    \caption{The surge thrust $T_u$.}
+    \label{fig:restrepo_surge_thrust}
+    \end{subfigure}
+    \vspace*{-2mm}
+    \caption{Control inputs from the simulation of the edge-agreement-based formation control algorithm.}
+    \label{fig:control_input_restrepo}
+\end{figure}

@@ -1,0 +1,61 @@
+\chapter{Formation Path-Following}\label{cha:formation_path_following}
+
+The main objective of this work is to study control methods for multi-agent systems. Specifically, the work herein aims to examine existing methods and develop new methods for the formation path following of fleets of \glspl{auv}. This chapter will introduce the necessary assumptions for the paths, the relevant coordinate frames, and the notation used herein to describe fleets of \glspl{auv}.
+
+
+\section{Equations of motion and coordinate frames}
+We consider a fleet of $n$ \glspl{auv} equipped with output-feedback-linearization hand-position controllers. Each vehicle follows the equations of motion \eqref{eq:hand_linearized_system}. We define the stacked position, velocity, and control input vectors of the fleet $\mathbf{p} = [\mathbf{p}_{1}\T, \, \ldots,\, \mathbf{p}_{n}\T]\T$, $\mathbf{v} = [\mathbf{v}_{1}\T, \, \ldots,\, \mathbf{v}_{n}\T]\T$, and $\bm{\mu} = [\bm{\mu}_1\T, \, \ldots,\, \bm{\mu}_n\T]\T$, respectively. We also define the stacked ocean current vector $\mathbf{V}_c = \mathbf{1}_{n,1} \otimes \mathbf{v}_c$, where $\mathbf{1}_{n,1}$ is an $n$-dimensional vector of ones, and $\otimes$ is the Kronecker product. The translational motion of the whole fleet can then be described in terms of the stacked variables
+\begin{subequations}\label{eq:fleet_equation}
+\begin{align}
+    \dot{\mathbf{p}} &= \mathbf{v} + \mathbf{V}_c,\\
+    \dot{\mathbf{v}} &= \bm{\mu}.
+\end{align}
+\end{subequations}
+
+The formation path-following objective will involve controlling the barycenter $\mathbf{p}_b$ of the fleet to follow a predetermined path. The barycenter is defined as follows:
+\begin{equation}\label{eq:barycenter}
+    \mathbf{p}_b = \frac{1}{n}\sum_{i=1}^n \mathbf{p}_i.
+\end{equation}
+
+We let the path be given by a continuous parametric function $\mathbf{p}_p (\xi) : \mathbb{R} \mapsto \mathbb{R}^3$. The path is assumed to be smooth and regular, meaning that it is infinitely differentiable and the partial derivative with respect to $\xi$ satisfies $\left\|\frac{\partial \mathbf{p}_p(\xi)}{\partial \xi}\right\| \neq 0$.
+
+For every point $\mathbf{p}_p(\xi)$, there exists a path-tangential coordinate frame with a corresponding rotation matrix $\mathbf{R}_p$. The path-following error $\mathbf{p}_b^p$ is defined in terms of the barycenter of the fleet in the path-tangential coordinate frame:
+\begin{equation}\label{eq:barycenter_path_tangential}
+    \mathbf{p}_b^p = \mathbf{R}_p\T\left(\mathbf{p}_b - \mathbf{p}_p(\xi)\right).
+\end{equation}
+
+The formation is defined in the formation-centered coordinate frame, centered at $\mathbf{p}_b$ with the same orientation as the path-tangential frame. The position of a vehicle in the formation-centered frame is given by
+\begin{equation}\label{eq:formation_centered_frame}
+    \mathbf{p}_i^f = \mathbf{R}_p\T \left(\mathbf{p}_i - \mathbf{p}_b \right),
+\end{equation}
+and the desired positions are given by $\mathbf{p}_{f,1}^f, \ldots, \mathbf{p}_{f,n}^f$. By definition of $\mathbf{p}_b$, the following constraint always holds
+\begin{equation}\label{eq:pf_constraint}
+    \sum_{i=1}^n \mathbf{p}_i^f = \mathbf{0}.
+\end{equation} 
+Consequently, $n-1$ desired barycenter-relative positions $\mathbf{p}_{f,i}^f$ are sufficient to uniquely specify the formation, because the final vehicle's position is implied by \eqref{eq:pf_constraint}. The formation is illustrated in Figure~\ref{fig:formation}. 
+
+
+\begin{figure}[htp]
+    \centering
+    \def\svgwidth{\textwidth}
+    \import{figures/illustrations}{formation_alternative.pdf_tex}
+    %\vspace{-1em}
+    \caption{Definition of the formation. $\mathbf{O}^f$ denotes the origin of the formation-centered coordinate frame, $\mathbf{O}^p$ denotes the origin of the path-tangential frame and $\mathbf{O}^{NED}$ denotes the origin of the inertial \gls{ned} frame, $\mathbf{p}_i$ denotes vehicle $i$, and $\mathbf{p}_{f,i}^f$ denotes the desired position of vehicle $i$ relative to $\mathbf{p}_b$. Figure inspired by \cite{matous_singularity-free_2022}.}
+    \label{fig:formation}
+    %\vspace{-0.3em}
+\end{figure}
+
+\section{Communication and graph theory}\label{sec:graph_theory}
+In this work, both centralized and decentralized methods are presented. Centralized methods require that each vehicle communicates with every other vehicle and the full state of every vehicle is needed for calculation of controller outputs. These methods are typically infeasible to implement in practice because of communication limitations, but they provide interesting theoretical results and may serve as a basis for developing decentralized controllers.
+
+In decentralized methods, each vehicle calculates its own controller output, often with limited knowledge of the state of other vehicles. Each agent may have access to information from only a limited number of local neighbors. This communication topology is represented by a graph, $\mathcal{G} = (\mathcal{V}, \mathcal{E})$, where the set of vertices $\mathcal{V} \coloneqq \{1,2,\ldots,N\}$ corresponds to the agents and the set of edges $\mathcal{E} \subseteq \mathcal{V}^2$ represents the communication between pairs of agents. Let $M$ be the cardinality of $\mathcal{E}$. The set $\mathcal{E}$ is then given by $\{e_k | k = 1, \ldots , M\}$, where each edge $e_k$ is an ordered pair $(i,j) \in \mathcal{E}$ indicating that agent $j$ has access to information from agent $i$. If the graph is \textit{undirected}, information flows in both directions meaning that if a vertex pair $(i,j)\in \mathcal{E}$ then so is $(j,i)$. The graph is \textit{connected} if there exists a path connecting every agent to every other agent, and it is \textit{complete} (fully connected) if there exists an edge between every pair of agents. We let the set of neighbors of a vertex $i$ be denoted by the set
+\begin{equation}
+    \mathcal{N}_i = \left\{ j \in \mathcal{V} \colon (i,j) \in \mathcal{E}\right\}.
+\end{equation}
+The Laplacian matrix of the graph is a matrix $\mathbf{L}\in \mathbb{R}^{N\times N}$ such that
+\begin{equation}\label{eq:laplacian_matrix}
+\mathbf{L}_{ij}=\begin{cases}\sum\limits_{j=1}^{N}a_{ij}, & i=j.\\ -a_{ij}, & i\neq j,\end{cases}, \quad  a_{ij}=\begin{cases} 1, & \mathrm{i}\mathrm{f} \ (j, i)\in \mathcal{E},\\ 0, & \text{otherwise}.\end{cases}
+\end{equation}
+It is useful in multiple formation-control methods, particularly consensus methods such as the formation-keeping task in our distributed \gls{nsb} method as presented in Chapter~\ref{cha:distributed_NSB}. For an undirected graph, the Laplacian matrix is symmetric positive-semidefinite. It has an eigenvalue $\lambda_0 = 0$ corresponding to the eigenvector $\mathbf{v}_0 = [1,\, \ldots ,\, 1]\T$.\enlargethispage*{\baselineskip}
+
+

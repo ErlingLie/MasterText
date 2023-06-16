@@ -1,0 +1,94 @@
+\chapter{Hand Position Transformation}\label{cha:hand_position}
+This chapter details the hand-position input-output feedback linearization transformation used herein to transform the non-linear underactuated \gls{auv} model \eqref{eq:auv_model} to a double-integrator with a constant ocean-current velocity disturbance.
+
+The hand position concept was first introduced in \cite{pomet_hybrid_1992} to stabilize nonholonomic vehicles with unicycle dynamics. The method was extended to marine vehicles moving in the horizontal plane by \cite{paliotta_trajectory_2019}, which was then used as the basis for a formation control method in \cite{restrepo_tracking--formation_2022}. The method was further extended to 6-\gls{dof} underwater vehicles in \cite{matous_trajectory_2023}. In this chapter, we will present the method as derived for \glspl{auv}.
+
+The linearization involves choosing the hand-position point as the system's output. The hand-position point is located a given distance from the vehicle's pivot point along the $x$-axis. Figure~\ref{fig:hand_illustration} illustrates an \gls{auv} with the center of gravity, pivot point, and hand-position point marked. With reference to the \gls{auv} equations of motion \eqref{eq:auv_model}, the hand-position point is defined in terms of the following change of coordinates:
+\begin{subequations}\label{eq:hand_position}
+    \begin{align}
+        \mathbf{p} &= \bm{\eta} + \mathbf{RL},\\
+        \mathbf{v} &= \mathbf{R} \bm{\nu}_r + \mathbf{R}(\bm{\omega}\times \mathbf{L}),
+    \end{align}
+\end{subequations}
+where $\mathbf{L} = [h,0,0]^\mathrm{T}$ and $h>0$ is the hand length.\enlargethispage*{\baselineskip}
+\begin{figure}[ht]
+    \centering
+    \def\svgwidth{.5\textwidth}
+    \import{figures/illustrations}{hand_position.pdf_tex}
+    %\vspace{-1em}
+    \caption{Illustration of the \gls{auv} with different points of interest. The marked points are the center of gravity (CG), pivot point (PP), and hand-position point (HP). Additionally, the hand length $\mathbf{L}$ is marked. The dashed line illustrates the vehicle's center line, which contains all the points of interest.}
+    \label{fig:hand_illustration}
+    %\vspace{-0.3em}
+\end{figure}
+
+To derive the feedback linearized equations of motion, we first introduce some notation. Let
+\begin{equation}
+    \mathbf{M}^{-1} = \begin{bmatrix}
+        \mathbf{M}_{11}^\prime & \mathbf{M}_{12}^\prime\\
+        \mathbf{M}_{21}^\prime & \mathbf{M}_{22}^\prime,
+    \end{bmatrix}
+\end{equation}
+and
+\begin{equation}
+    \begin{bmatrix}
+    \mathcal{D}_{\bm{\nu}}\\
+    \mathcal{D}_{\bm{\omega}}
+    \end{bmatrix} = \mathbf{M}^{-1}\mathbf{D}(\bm{\zeta}_r) \bm{\zeta}_r, \quad \begin{bmatrix}
+    \mathcal{C}_{\bm{\nu}}\\
+    \mathcal{C}_{\bm{\omega}}
+    \end{bmatrix} = \mathbf{M}^{-1}\mathbf{C}(\bm{\zeta}_r)\bm{\zeta}_r.
+\end{equation}
+Then, we can rewrite \eqref{eq:auv_model_c} in the following form
+\begin{subequations}\label{eq:nu_omega_compact}
+\begin{align}
+    \dot{\bm{\nu}}_r &= [f_u,0,0]\T - \mathcal{D}_{\bm{\nu}}(\bm{\zeta}_r) - \mathcal{C}_{\bm{\nu}}(\bm{\zeta}_r),\\
+    \dot{\bm{\omega}} &= [t_p,t_q,t_r]\T - \mathcal{D}_{\bm{\omega}}(\bm{\zeta}_r) - \mathcal{C}_{\bm{\omega}}(\bm{\zeta}_r) - \mathbf{M}_{22}^\prime\left(W z_{bg} \mathbf{e}_3 \times R\T e_3\right).
+\end{align}
+\end{subequations}
+
+Differentiating \eqref{eq:hand_position} with respect to time and inserting for \eqref{eq:nu_omega_compact} yields:
+\begin{subequations}\label{eq:output_dynamics}
+\begin{align}
+    \dot{\mathbf{p}} &= \mathbf{v} + \mathbf{v}_c,\\
+    \begin{split}
+    \dot{\mathbf{v}} &= \mathbf{R}\left(\dot{\bm{\nu}}_r +\bm{\omega}\times \bm{\nu}_r + \dot{\bm{\omega}}\times \mathbf{L} +  \bm{\omega}\times (\bm{\omega}\times \mathbf{L})\right),\\ 
+    &=\mathbf{R}\biggl([f_u,h t_r, -h t_q]\T - \mathcal{D}_{\bm{\nu}}(\bm{\zeta}_r) - \mathcal{C}_{\bm{\nu}}(\bm{\zeta}_r) + \bm{\omega}\times\bm{\nu}_r \\ 
+    & \quad + \mathbf{L}\times \left(\mathcal{D}_{\bm{\omega}}(\bm{\zeta}_r) + \mathcal{C}_{\bm{\omega}}(\bm{\zeta}_r) + \mathbf{M}_{22}^\prime\left(W z_{bg} \mathbf{e}_3 \times R\T e_3\right)\right) + \bm{\omega}\times (\bm{\omega}\times \mathbf{L})\biggr).
+    \end{split}
+\end{align}
+\end{subequations}
+We note that $\dot{\mathbf{v}}$ is independent of the roll torque $t_p$. Therefore, $t_p$ is used independently to stabilize the roll dynamics by canceling the Coriolis effect
+\begin{align}
+        t_p &= \mathbf{e}_1\T \mathcal{C}_{\bm{\omega}}(\bm{\zeta}_r). \label{eq:roll_torque}
+\end{align}
+
+The following change of input linearizes the output dynamics \eqref{eq:output_dynamics}:
+\begin{equation}
+    \begin{split}
+        \begin{bmatrix}
+            f_u \\ t_q \\ t_r
+        \end{bmatrix}
+        &
+        =
+        \begin{bmatrix}
+            1 & 0 & 0 \\ 0 & 0 & -\frac{1}{h} \\ 0 & \frac{1}{h} & 0
+        \end{bmatrix}
+        \Big(\mathbf{R}\T\bm{\mu} + \mathcal{D}_{\bm{\nu}}(\bm{\zeta}_r) + \mathcal{C}_{\bm{\nu}}(\bm{\zeta}_r) - \bm{\omega} \times \bm{\nu}_r  \\
+        &\quad - \mathbf{L} \times \left(\mathcal{D}_{\bm{\omega}}(\bm{\zeta}_r) + \mathcal{C}_{\bm{\omega}}(\bm{\zeta}_r) + \mathbf{M}_{22}^{\prime}\left(Wz_{bg} \mathbf{e}_3 \times \mathbf{R}\T \mathbf{e}_3\right)\right) \\
+        &\quad - \bm{\omega} \times \left(\bm{\omega} \times \mathbf{L}\right)\Big),
+    \end{split}
+\end{equation}
+where $\bm{\mu} \in \mathbb{R}^3$ is the new control input. The resulting output feedback linearized system is given by:\enlargethispage*{2\baselineskip}
+\begin{subequations}\label{eq:hand_linearized_system}
+    \begin{align}
+        \dot{\mathbf{p}} &= \mathbf{v} + \mathbf{v}_c,\\\label{eq:hand_pos_first_derivative}
+        \dot{\mathbf{v}} &= \bm{\mu},\\
+        \dot{\mathbf{R}} &=  \mathbf{R} \mathbf{S}(\bm{\omega}),\\
+        \begin{split}
+        \dot{\bm{\omega}} &= \mathbf{f}_0(\bm{\mu}, \bm{\omega}, \mathbf{R}, \mathbf{v})\\
+        &= \widebar{\mathbf{L}} \times \left (\mathbf{R}^T\bm{\mu} + \mathcal{D}_{\bm{\nu}} (\bm{\zeta}_r) + \mathcal{C}_{\bm{\nu}} (\bm{\zeta}_r) - \bm{\omega} \times \mathbf{R}^T \mathbf{v}\right )\\
+        &\hphantom{=}- \left(\mathbf{\widebar{L}L}^T\right)\left(\mathcal{D}_{\bm{\omega}} (\bm{\zeta}_r) + \mathbf{M}_{22}' (W \mathbf{z}_{gb}\mathbf{e}_3 \times \mathbf{R}^T \mathbf{e}_3)\right), \label{eq:internal_dynamics}           
+        \end{split}
+    \end{align}
+\end{subequations}
+where $\widebar{\mathbf{L}} = [1/h,\, 0,\, 0]^T$, $[\mathbf{p}, \mathbf{v}]^\mathrm{T}$ is the external part of the system and $[\mathbf{R}, \,\bm{\omega}]^\mathrm{T}$ is the internal part. The dynamics of the external part of the system are linear, with the ocean current as an unknown disturbance. Because the internal dynamics \eqref{eq:internal_dynamics} are affected by the input $\bm{\mu}$, the internal stability properties of $\mathbf{R}$ and $\bm{\omega}$ must be verified for the specific choice of control law for $\bm{\mu}$.

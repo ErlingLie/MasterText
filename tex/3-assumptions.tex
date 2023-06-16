@@ -1,0 +1,116 @@
+\chapter{Vehicle Model}\label{cha:vehicle_model}
+This chapter presents the notation and assumptions for the vehicle models in this work. Because the high-level goal of the thesis is to study multi-agent control algorithms suitable to combine with the 3D hand-position method presented in Chapter~\ref{cha:hand_position}, the assumptions on the vehicle models will be similar to those of the original 3D hand-position paper \citep{matous_trajectory_2023}.
+
+We consider a standard six-degrees-of-freedom \gls{auv} model with an unknown irrotational current. The position of the vehicle in the \gls{ned} coordinate frame is denoted by $\bm{\eta} \in \mathbb{R}^3$, the attitude is parameterized using a rotation matrix $\mathbf{R}\in SO(3)$, and the translational and rotational velocities in the vehicle's body-fixed coordinate frame are denoted by $\bm{\nu}\in\mathbb{R}^3$ and $\bm{\omega}\in\mathbb{R}^3$, respectively. 
+
+The \gls{auv} is affected by an unknown constant irrotational ocean current $\mathbf{v}_c\in\mathbb{R}^3$. We define the relative velocity between the \gls{auv} and the current as $\bm{\nu}_r = \bm{\nu} - R^\mathrm{T}\mathbf{v}_c$, and the concatenated velocity vector as $\bm{\zeta}_r^\mathrm{T} = [\bm{\nu}_r^\mathrm{T},\bm{\omega}^\mathrm{T}]$. The \gls{auv} is subject to external forces and moments due to hydrodynamic forces, gravitational forces, and control inputs. We assume that we can control the surge thrust and torque around all three axes, and denote the control input vector $\mathbf{f} = [T_u,T_p,T_q,T_r]\T$, where $T_u$ is the surge thrust and $T_p,\, T_q, \, T_r$ denote the torques produced by the fins. The \gls{auv} dynamics can be written as follows \citep{fossen_handbook_2021}:
+\begin{subequations}\label{eq:auv_model}
+\begin{align}
+\dot{\bm{\eta}} &= \mathbf{R}\bm{\nu}_r + \mathbf{v}_c, \\
+\dot{\mathbf{R}} &= \mathbf{R} \mathbf{S}(\bm{\omega}), \\
+\mathbf{M}\dot{\bm{\zeta}_r} + \mathbf{C}(\bm{\zeta}_r)\bm{\zeta}_r + \mathbf{D}(\bm{\zeta}_r)\bm{\zeta}_r + \mathbf{g}(\mathbf{R}) &= \mathbf{Bf},\label{eq:auv_model_c}
+\end{align}
+\end{subequations}
+where $\mathbf{M}\in\mathbb{R}^{6\times 6}$ is the mass and inertia matrix, $\mathbf{C}(\bm{\zeta}_r)\in\mathbb{R}^{6\times 6}$ is the Coriolis and centripetal matrix, $\mathbf{D}(\bm{\zeta}_r)\in\mathbb{R}^{6\times 6}$ is the hydrodynamic damping matrix, $\mathbf{g}(\mathbf{R})\in\mathbb{R}^6$ represents the gravitational and buoyancy forces, $\mathbf{B}\in\mathbb{R}^{4\times 6}$ is the control allocation matrix, %. $\mathbf{S}(\cdot)$ is a skew-symmetrix matrix so that $\mathbf{S}(\bm{\omega})\mathbf{x} = \bm{\omega} \times \mathbf{x}$.
+and $\mathbf{S} : \mathbb{R}^3 \mapsto \mathfrak{so}(3)$ is the skew-symmetric matrix operator. Note that for any two vectors $\mathbf{a}, \mathbf{b} \in \mathbb{R}^3$, it follows that $\mathbf{S}(\mathbf{a})\mathbf{b} = \mathbf{a} \times \mathbf{b}$, where $\times$ is the vector cross product.
+
+Next, we present the modeling assumptions.
+\begin{assumption}\label{assumption:one}
+The vehicle is slender, torpedo-shaped with port-starboard and top-bottom symmetry.
+\end{assumption}
+\begin{assumption}\label{assumption:two}
+    The vehicle is neutrally buoyant, with the \gls{cg} and \gls{cb} on the same vertical axis. The distance from \gls{cb} to \gls{cg} is given by the positive constant $z_{bg}$, meaning the center of gravity is located below the center of buoyancy.
+\end{assumption}
+
+
+\begin{assumption}\label{assumption:three}
+    The origin of the body-fixed coordinate frame is located at \textit{neutral point} (also commonly referred to as \gls{pp}) which has relative position $[x_o,\,0,\,0]^T$ from the center of gravity, with $x_o$ such that the actuators produce no sway or heave acceleration. Then, there exist $f_u, \, t_p, \, t_q$, and $t_r$ such that
+    \begin{equation}\label{eq:assumption_three}
+        \mathbf{M}^{-1}\mathbf{Bf} = [f_u,\, 0,\, 0,\, t_p, \, t_q, \, t_r]^T.
+    \end{equation}
+\end{assumption}
+
+It was shown in \cite{borhaug_straight_2007} that there exists a coordinate transformation that satisfies \eqref{eq:assumption_three} for a 5-\gls{dof} model satisfying Assumption \ref{assumption:one}. The result is trivially extended to 6-\gls{dof} because roll is decoupled from the other degrees of freedom under Assumption \ref{assumption:one}. The coefficients $\epsilon_1$ and $\epsilon_2$ are defined as
+\begin{equation}\label{eq:borhaug_transformation}
+    \epsilon_1 \triangleq -\frac{m_{55}b_{23} - m_{25}b_{53}}{m_{22}b_{53} - m_{25}b_{23}}, \quad \epsilon_2 \triangleq -\frac{m_{44}b_{32} - m_{34}b_{42}}{m_{33}b_{42} - m_{34}b_{32}},
+\end{equation}
+where $m_{ij}$ and $b_{ij}$ are the elements on row i, column j of M and B, respectively. The coordinate transformation matrix to the pivot point from the existing coordinate origin (CO) is then given by the matrix $\mathbf{H}_{PP}$ such that $\bm{\zeta}_r^{PP} = \mathbf{H}_{PP} \bm{\zeta}_r^{CO}$:
+\begin{equation}\label{eq:pp_transform_matrix}
+    \mathbf{H}_{PP} = \begin{bmatrix}
+1 & 0 & 0 & 0 & 0 & 0\\
+0 & 1 & 0 & 0 & 0 & -\epsilon_1\\
+0 & 0 & 1 & 0 & -\epsilon_2 & 0\\
+0 & 0 & 0 & 1 & 0 & 0\\
+0 & 0 & 0 & 0 & 1 & 0\\
+0 & 0 & 0 & 0 & 0 & 1
+    \end{bmatrix}.
+\end{equation}
+We note that for most cylindrical-shaped \glspl{auv}, $\epsilon_1 = -\epsilon_2$. Then $\mathbf{H}_{PP}$ corresponds to a physical translation of the coordinate origin along the $x$-axis of the ship as detailed in \cite[Appendix C]{fossen_handbook_2021}. The points of interest from Assumption~\ref{assumption:two} and \ref{assumption:three} are illustrated in Figure~\ref{fig:auv_model}.
+\begin{figure}[ht]
+    \centering
+    \def\svgwidth{.5\textwidth}
+    \import{figures/illustrations}{auv_with_CG_CB_PP.pdf_tex}
+    %\vspace{-1em}
+    \caption{Illustration of the \gls{auv} with different points of interest. The marked points are the center of gravity (CG), the center of buoyancy (CB), and the pivot point (PP). The coordinate axes show the orientation of the body-fixed coordinate system, however, the origin would be at the pivot point according to Assumption~\ref{assumption:three}.}
+    \label{fig:auv_model}
+    %\vspace{-0.3em}
+\end{figure}
+
+\begin{assumption}
+    The \gls{auv} is operating at sufficiently fast ocean-current relative speeds so that it remains fully controllable.
+\end{assumption}
+Because the torques are produced by fins attached to the \gls{auv}, the vehicle must maintain a minimum ocean current-relative velocity to remain controllable.
+
+\begin{assumption}\label{assumption:four}
+The \gls{auv} is operating at sufficiently slow speeds so that the hydrodynamic damping can be considered linear.
+\end{assumption}
+
+
+The structure of the matrices $\mathbf{M}$, $\mathbf{B}$, and $\mathbf{D}$ under Assumptions \ref{assumption:one}, \ref{assumption:three}, and \ref{assumption:four} are
+{\allowdisplaybreaks
+\begin{subequations}
+    \begin{align}
+        \mathbf{M} &= \begin{bmatrix}
+        m_{11}& 0& 0& 0& 0& 0\\
+        0&  m_{22}& 0& 0& 0& m_{26}\\
+        0& 0& m_{33}& 0& m_{35}& 0\\
+        0& 0& 0& m_{44}& 0& 0\\
+        0& 0& m_{35}& 0& m_{55}& 0\\
+        0& m_{26}& 0& 0& 0& m_{66}        
+        \end{bmatrix},\\
+        \mathbf{B} &= \begin{bmatrix}
+            b_{11} & 0 & 0 & 0\\
+            0 & 0 & 0 & b_{24}\\
+            0 & 0 & b_{33} & 0\\
+            0 & b_{42} & 0 & 0\\
+            0 & 0 & b_{53} & 0\\
+            0 & 0 & 0 & b_{64}\\
+        \end{bmatrix},\\
+        \mathbf{D} &= \begin{bmatrix}
+        d_{11}& 0& 0& 0& 0& 0\\
+        0& d_{22}& 0& 0& 0& d_{26}\\
+        0& 0& d_{33}& 0& d_{35}& 0\\
+        0& 0& 0& d_{44}& 0& 0\\
+        0& 0& d_{53}& 0& d_{55}& 0\\
+        0& d_{62}& 0& 0& 0& d_{66}        
+        \end{bmatrix}.
+    \end{align}
+\end{subequations}
+}
+\begin{assumption}\label{assumption:five}
+    The effect of gravity and buoyancy on the linear velocities is negligible. 
+\end{assumption}
+
+Therefore, under Assumptions \ref{assumption:two} and \ref{assumption:five}, the following approximation 
+    \begin{equation}
+        \mathbf{M}^{-1}\mathbf{g}(\mathbf{R}) \approx \begin{bmatrix}
+            0_3\\
+            \mathbf{M}_{22}'(W z_{bg}\mathbf{e}_3\times R^T \mathbf{e}_3)
+        \end{bmatrix}
+    \end{equation}
+can be used to simplify dynamics, where $\mathbf{M}_{22}'$ is the lower right part of $M^{-1}$, and $\mathbf{e}_3 = [0, \, 0,\, 1]^T$ is the third axis unit vector. 
+
+\begin{assumption}
+    The full state $\{\bm{\eta},\, \mathbf{R},\, \bm{\zeta}_r\}$ is available for feedback. 
+\end{assumption}
+We do not consider the state estimation problem and assume that the full state is available for feedback.

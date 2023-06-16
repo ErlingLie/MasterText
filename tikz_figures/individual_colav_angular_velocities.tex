@@ -1,0 +1,81 @@
+% This file was created by matlab2tikz.
+%
+%The latest updates can be retrieved from
+%  http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz
+%where you can also make suggestions and rate matlab2tikz.
+%
+\definecolor{mycolor1}{rgb}{0.00000,0.44700,0.74100}%
+\definecolor{mycolor2}{rgb}{0.85000,0.32500,0.09800}%
+\definecolor{mycolor3}{rgb}{0.92900,0.69400,0.12500}%
+%
+\begin{tikzpicture}
+
+\begin{axis}[%
+width=0.951\figurewidth,
+height=\figureheight,
+at={(0\figurewidth,0\figureheight)},
+scale only axis,
+xmin=0,
+xmax=250,
+xlabel style={at={(axis description cs:0.5,-0.08)}, font=\color{white!15!black}},
+xlabel={Time [s]},
+ymin=-0.2,
+ymax=0.3,
+ylabel style={font=\color{white!15!black}},
+ylabel={Angular Velocity [rad/s]},
+axis background/.style={fill=white},
+title style={font=\bfseries, yshift=-2.75mm},
+title={Angular velocities},
+axis background/.style={fill=white},
+every axis plot/.append style={line width=0.7pt},
+legend style={legend cell align=left, align=left, draw=white!15!black, font=\footnotesize}
+]
+\addplot [color=mycolor1]
+  table[]{individual_colav_angular_velocities-1.tsv};
+\addlegendentry{Roll rate}
+
+\addplot [color=mycolor1, dashed, forget plot]
+  table[]{individual_colav_angular_velocities-2.tsv};
+\addplot [color=mycolor1, dotted, forget plot]
+  table[]{individual_colav_angular_velocities-3.tsv};
+\addplot [color=mycolor2]
+  table[]{individual_colav_angular_velocities-4.tsv};
+\addlegendentry{Pitch rate}
+
+\addplot [color=mycolor2, dashed, forget plot]
+  table[]{individual_colav_angular_velocities-5.tsv};
+\addplot [color=mycolor2, dotted, forget plot]
+  table[]{individual_colav_angular_velocities-6.tsv};
+\addplot [color=mycolor3]
+  table[]{individual_colav_angular_velocities-7.tsv};
+\addlegendentry{Yaw rate}
+
+\addplot [color=mycolor3, dashed, forget plot]
+  table[]{individual_colav_angular_velocities-8.tsv};
+\addplot [color=mycolor3, dotted, forget plot]
+  table[]{individual_colav_angular_velocities-9.tsv};
+
+\addplot[area legend, dashed, draw=black, fill=green, fill opacity=0.15, forget plot]
+table[] {individual_colav_angular_velocities-10.tsv}--cycle;
+
+\addplot[area legend, dashed, draw=black, fill=white!50!red, fill opacity=0.25, forget plot]
+table[] {individual_colav_angular_velocities-11.tsv}--cycle;
+
+\end{axis}
+
+\begin{axis}[%
+width=1.227\figurewidth,
+height=1.227\figureheight,
+at={(-0.16\figurewidth,-0.135\figureheight)},
+scale only axis,
+xmin=0,
+xmax=1,
+ymin=0,
+ymax=1,
+axis line style={draw=none},
+ticks=none,
+axis x line*=bottom,
+axis y line*=left
+]
+\end{axis}
+\end{tikzpicture}%

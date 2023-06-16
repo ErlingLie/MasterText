@@ -1,0 +1,61 @@
+% This file was created by matlab2tikz.
+%
+%The latest updates can be retrieved from
+%  http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz
+%where you can also make suggestions and rate matlab2tikz.
+%
+\definecolor{mycolor1}{rgb}{0.00000,0.44700,0.74100}%
+\definecolor{mycolor2}{rgb}{0.85000,0.32500,0.09800}%
+\definecolor{mycolor3}{rgb}{0.92900,0.69400,0.12500}%
+%
+\begin{tikzpicture}
+
+\begin{axis}[%
+width=0.951\figurewidth,
+height=\figureheight,
+at={(0\figurewidth,0\figureheight)},
+scale only axis,
+xmin=0,
+xmax=250,
+xlabel style={at={(axis description cs:0.5,-0.08)}, font=\color{white!15!black}},
+xlabel={Time [s]},
+ymin=-25,
+ymax=25,
+ylabel style={font=\color{white!15!black}},
+ylabel={Error [m]},
+axis background/.style={fill=white},
+every axis plot/.append style={thick},
+title style={font=\bfseries, yshift=-2.75mm},
+title={Formation keeping errors},
+axis background/.style={fill=white},
+legend style={legend cell align=left, align=left, draw=white!15!black,font=\footnotesize}
+]
+\addplot [color=mycolor1]
+  table[]{individual_colav_formation_keeping_error-1.tsv};
+  \addlegendentry{$x$-error}
+\addplot [color=mycolor1, dashed, forget plot]
+  table[]{individual_colav_formation_keeping_error-2.tsv};
+\addplot [color=mycolor1, dotted, forget plot]
+  table[]{individual_colav_formation_keeping_error-3.tsv};
+\addplot [color=mycolor2]
+  table[]{individual_colav_formation_keeping_error-4.tsv};
+  \addlegendentry{$y$-error}
+\addplot [color=mycolor2, dashed, forget plot]
+  table[]{individual_colav_formation_keeping_error-5.tsv};
+\addplot [color=mycolor2, dotted, forget plot]
+  table[]{individual_colav_formation_keeping_error-6.tsv};
+\addplot [color=mycolor3]
+  table[]{individual_colav_formation_keeping_error-7.tsv};
+  \addlegendentry{$z$-error}
+\addplot [color=mycolor3, dashed, forget plot]
+  table[]{individual_colav_formation_keeping_error-8.tsv};
+\addplot [color=mycolor3, dotted, forget plot]
+  table[]{individual_colav_formation_keeping_error-9.tsv};
+
+\addplot[area legend, dashed, draw=black, fill=green, fill opacity=0.15, forget plot]
+table[] {individual_colav_formation_keeping_error-10.tsv}--cycle;
+
+\addplot[area legend, dashed, draw=black, fill=white!50!red, fill opacity=0.25, forget plot]
+table[] {individual_colav_formation_keeping_error-11.tsv}--cycle;
+\end{axis}
+\end{tikzpicture}%

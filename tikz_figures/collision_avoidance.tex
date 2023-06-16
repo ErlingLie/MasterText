@@ -1,0 +1,50 @@
+% This file was created by matlab2tikz.
+%
+%The latest updates can be retrieved from
+%  http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz
+%where you can also make suggestions and rate matlab2tikz.
+%
+\definecolor{mycolor1}{rgb}{0.00000,0.44700,0.74100}%
+\definecolor{mycolor2}{rgb}{0.85000,0.32500,0.09800}%
+%
+\begin{tikzpicture}
+
+\begin{axis}[%
+width=0.951\figurewidth,
+height=\figureheight,
+at={(0\figurewidth,0\figureheight)},
+scale only axis,
+xmin=0,
+xmax=250,
+xlabel style={at={(axis description cs:0.5,-0.08)}, font=\color{white!15!black}},
+xlabel={Time [s]},
+ymin=0,
+ymax=25,
+ylabel style={font=\color{white!15!black}, yshift=2mm},
+ylabel={Distance [m]},
+axis background/.style={fill=white},
+every axis plot/.append style={line width=0.7pt},
+title style={font=\bfseries, yshift=-2.75mm},
+title={Smallest distances},
+legend style={at={(0.97,0.02)}, anchor=south east, legend cell align=left, align=left, draw=white!15!black, legend columns=2,font=\footnotesize}
+]
+\addplot [color=mycolor1]
+  table[]{collision_avoidance-1.tsv};
+\addlegendentry{Inter-vehicle}
+
+\addplot [color=mycolor2]
+  table[]{collision_avoidance-2.tsv};
+\addlegendentry{Obstacle}
+
+\addplot[area legend, dashed, draw=black, fill=green, fill opacity=0.15, forget plot]
+table[] {formation_keeping_error-10.tsv}--cycle;
+
+\addplot [color=black, dashed]
+  table[]{collision_avoidance-3.tsv};
+\addlegendentry{$d_{\rm COLAV}$}
+
+
+\addplot[area legend, dashed, draw=black, fill=white!50!red, fill opacity=0.25, forget plot]
+table[] {collision_avoidance-4.tsv}--cycle;
+\end{axis}
+\end{tikzpicture}%

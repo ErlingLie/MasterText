@@ -1,0 +1,567 @@
+\chapter{Closed-Loop Analysis of the Distributed NSB Method}\label{cha:distributed_closed_loop}
+\vspace{-2mm}
+This chapter studies the stability properties of the novel distributed \gls{nsb} control law. We show that the formation-keeping task and path-following tasks are asymptotically stable. We do not consider the alternative distributed formulation from Section~\ref{sec:alternative_distributed}, as it is very similar to the method presented in \cite{matous_formation_2023}, and the stability analysis should follow directly from combining their results with our results from the centralized method in Chapter~\ref{cha:closed_loop}.
+
+We consider nominal operation in which no collision avoidance task is active. The control input is given by 
+\begin{equation}
+    \bm{\mu}_i = \bm{\mu}_{f,i} + \bm{\mu}_{p,i},
+\end{equation}
+% \begin{equation}
+%     \bm{\mu}_i = \dot{\mathbf{v}}_{2,i} + \frac{1}{|\mathcal{N}_i|+1}\left(\dot{\mathbf{v}}_{3,i}+\sum_{j\in\mathcal{N}_i} \dot{\mathbf{v}}_{3,j}\right).
+% \end{equation}
+where $\bm{\mu}_{f,i}$ and $\bm{\mu}_{p,i}$ are defined by:
+\begin{equation}\label{eq:distributed_applied_accelerations}
+    \bm{\mu}_{f,i} \coloneqq \dot{\mathbf{v}}_{2,i}, \quad \bm{\mu}_{p,i} \coloneqq \frac{1}{|\mathcal{N}_i|+1}\left(\dot{\mathbf{v}}_{3,i}+\sum_{j\in\mathcal{N}_i} \dot{\mathbf{v}}_{3,j}\right).
+\end{equation}
+We note that by the definition of the \gls{los} path-following task, $\|\bm{\mu}_{p,i}\|$ is bounded and we denote the upper bound by $\bar{\mu}_p$. 
+
+
+\section{Formation-keeping task}
+\vspace{-2mm}
+In this section, we analyze the stability of the formation-keeping task. Following ideas from \cite{restrepo_tracking--formation_2022} we analyze the stability of the edges in the communication graph. The fleet has achieved the desired formation if and only if the edge errors are zero. We simplify the analysis by considering a piecewise linear saturation function instead of the $\mathrm{tanh}$-based function \eqref{eq:saturation_function}:
+\begin{equation}
+    \mathrm{sat}(\mathbf{x}) = \begin{cases}
+        \mathbf{x},\quad &\|\mathbf{x}\| < 1,\\
+        \frac{\mathbf{x}}{\|\mathbf{x}\|}, \quad &\|\mathbf{x}\| \geq 1.
+    \end{cases}
+\end{equation}
+We also replace the discontinuous $\mathrm{sign}(x)$ function in \eqref{eq:distributed_formation_acceleration} by element-wise applying $\mathrm{sat}(\tfrac{x}{\varepsilon})$ as is a common practice to reduce chattering \citep{khalil_nonlinear_2002}.
+
+The formation-keeping acceleration is then given by
+\begin{equation}
+\begin{split}
+     \dot{\mathbf{v}}_2 = &\dot{\Tilde{\mathbf{v}}}_{d} - v_{2,\max}\mathrm{sat}(\lambda_{p,2}(\hat{\mathbf{L}}\otimes \mathbf{I}_3)(\mathbf{p}-\mathbf{p}_d)) - \lambda_{d,2}(\hat{\mathbf{L}}\otimes \mathbf{I}_3)(\mathbf{v} - \mathbf{v}_d)  \\
+     &-\gamma \mathrm{sat}\left(\frac{1}{\varepsilon}(v_{2,\max}\mathrm{sat}(\lambda_{p,2}(\hat{\mathbf{L}}\otimes \mathbf{I}_3)(\mathbf{p}-\mathbf{p}_d)) + \lambda_{d,2}(\hat{\mathbf{L}}\otimes \mathbf{I}_3)(\mathbf{v} - \mathbf{v}_d))\right).
+\end{split}
+\end{equation}
+Although the same saturation function is used to approximate two different functions, we note that $\tfrac{1}{\varepsilon}\gg \lambda_{p,2}$. In the first use case, the function is used to saturate the control effort at high errors, whereas, in the second use case, the saturation function approximates the $\mathrm{sign}(x)$ function and approaches it in the limit $\varepsilon \rightarrow 0$.
+
+\subsection{Closed-loop dynamics}
+  For this analysis, we introduce the incidence matrix $\mathbf{E} \in \mathbb{R}^{n\times m}$ of the communication graph $\mathcal{G}$, where $n$ and $m$ represent the number of nodes and edges in the graph, respectively. The elements of $\mathbf{E}$ are defined as follows:
+\begin{equation}
+    \mathbf{E}_{ij} = \begin{cases}
+        -1, & \textrm{if node } i \textrm{ is the terminal node of edge } e_j,\\
+        1, & \textrm{if node } i \textrm{ is the initial node of edge } e_j,\\
+        0, & \textrm{otherwise}.
+    \end{cases}
+\end{equation}
+The edge states of the communication graph are then given by
+\begin{subequations}
+\begin{align}
+    \mathbf{z}_1 &= (\mathbf{E}\T\otimes \mathbf{I}_3)\mathbf{p},\\
+    \mathbf{z}_2 &= (\mathbf{E}\T\otimes \mathbf{I}_3) \mathbf{v},
+\end{align}
+\end{subequations}
+furthermore, the graph Laplacian is given by
+\begin{equation}
+    \mathbf{L} = \mathbf{E}\mathbf{E}\T.
+\end{equation}
+
+In line with the insights from \cite{restrepo_tracking--formation_2022}, our goal is to derive a reduced system that is easier to analyze with Lyapunov theory. Building upon the findings of \cite{zelazo_agreement_2007}, it is possible to reorganize the edge labels, resulting in an expression of the incidence matrix as
+\begin{equation}
+    \mathbf{E} = [\mathbf{E}_t\; \mathbf{E}_c],
+\end{equation}
+where $\mathbf{E}_t \in \mathbb{R}^{n\times n-1}$ denotes the full-column-rank incidence matrix corresponding to a spanning tree $\mathcal{G}_t \subseteq \mathcal{G}$ and $\mathbf{E}_c \in \mathbb{R}^{n\times(m-n+1)}$ represent the incidence matrix of the remaining edges. Furthermore, an alternative representation of the full incidence matrix is given by
+\begin{gather}
+    \mathbf{E} = \mathbf{E}_t \mathbf{R},\\
+    \mathbf{R} \coloneqq [\mathbf{I}_{n-1} \;\mathbf{T}],\quad \mathbf{T} \coloneqq (\mathbf{E_t}\T\mathbf{E}_t)^{-1} \mathbf{E}_t\T \mathbf{E}_c.
+\end{gather}
+Consequently, the Laplacian of the full communication graph can be written as
+\begin{equation}\label{eq:laplacian_alternative}
+    \mathbf{L} = \mathbf{E}_t\mathbf{R}\mathbf{R}\T \mathbf{E}_t\T.
+\end{equation}
+
+We let the reduced system error states be given by the edges of an arbitrary spanning tree of $\mathcal{G}$:
+\begin{subequations}
+\begin{align}
+    \tilde{\mathbf{z}}_{t,1} &= (\mathbf{E}_t\T\otimes \mathbf{I}_3)(\mathbf{p}-\mathbf{p}_d),\label{eq:z_t1_def}\\
+    \tilde{\mathbf{z}}_{t,2} &= (\mathbf{E}_t\T\otimes \mathbf{I}_3) (\mathbf{v} - \mathbf{v}_d),
+\end{align}
+\end{subequations}
+where $\mathbf{p}_d$ and $\mathbf{v}_d$ are given by \eqref{eq:desired_formation}. We rewrite the formation acceleration \eqref{eq:distributed_formation_acceleration} in terms of the error states:
+\begin{equation}\label{eq:mu_f_z}
+    \begin{split}
+        \bm{\mu}_f  = &\dot{\Tilde{\mathbf{v}}}_{d}- v_{2,\max} \mathrm{sat}\left(\lambda_{p,2}(\mathbf{D}\mathbf{E}_t\mathbf{R}\mathbf{R}\T\otimes \mathbf{I}_3)\tilde{\mathbf{z}}_1\right) -
+        \lambda_{d,2}(\mathbf{D}\mathbf{E}_t\mathbf{R}\mathbf{R}\T\otimes \mathbf{I}_3)\tilde{\mathbf{z}}_2\\
+        &-\gamma \mathrm{sat}\left(\frac{1}{\varepsilon}(v_{2,\max} \mathrm{sat}\left(\lambda_{p,2}(\mathbf{D}\mathbf{E}_t\mathbf{R}\mathbf{R}\T\otimes \mathbf{I}_3)\tilde{\mathbf{z}}_1\right)
+        + \lambda_{d,2}(\mathbf{D}\mathbf{E}_t\mathbf{R}\mathbf{R}\T\otimes \mathbf{I}_3)\tilde{\mathbf{z}}_2)\right),
+    \end{split}
+\end{equation}
+where $\mathbf{D}$ is the scaling matrix
+\begin{equation}
+    \mathbf{D} \coloneqq \mathrm{diag}\left(\frac{1}{|\mathcal{N}_1|+1},\, \ldots, \,\frac{1}{|\mathcal{N}_n|+1}\right).
+\end{equation}
+
+The error-system dynamics are given by
+\begin{subequations}\label{eq:distributed_formation_error_system}
+    \begin{align}
+        \dot{\tilde{\mathbf{z}}}_{t,1} &= \tilde{\mathbf{z}}_{t,2},\label{eq:distributed_formation_error_subsystem_1}\\
+        % \begin{split}
+        \dot{\tilde{\mathbf{z}}}_{t,2} &= (\mathbf{E}_t\otimes \mathbf{I}_3)\T (\bm{\mu}_f + \bm{\mu}_p - \dot{\tilde{\mathbf{v}}}_d).
+        % &= - (\mathbf{E}_t\T\mathbf{D}\mathbf{E}_t\mathbf{R}\mathbf{R}\T\otimes \mathbf{I}_3)(\lambda_{p,2}\tilde{\mathbf{z}}_{t,1}+ \lambda_{d,2}\tilde{\mathbf{z}}_{t,2})\\
+        % &\quad +\left(\mathbf{E}_t\T\otimes \mathbf{I}_3\right) \left(-\gamma\mathrm{sign}\left((\mathbf{D}\mathbf{E}_t\mathbf{R}\mathbf{R}\T\otimes \mathbf{I}_3)\left(\lambda_{p,2}\tilde{\mathbf{z}}_{t,1} + \lambda_{d,2}\tilde{\mathbf{z}}_{t,2}\right)\right) 
+        % + \bm{\mu}_p\right)
+        % \end{split}
+    \end{align}
+\end{subequations}
+
+\subsection{Closed-loop stability}
+% Theorem
+    We analyze the system using techniques from sliding-mode control. Parts of the proof closely follow insights from the proof of \cite[Theorem 14.1]{khalil_nonlinear_2002}.
+    
+    Let the sliding surface $\mathbf{s}$ be given by
+    \begin{equation}\label{eq:sliding_surface}
+        \mathbf{s} = \lambda_{d,2}\tilde{\mathbf{z}}_{t,2}+ v_{2,\max} \begin{cases}
+            \lambda_{p,2}\tilde{\mathbf{z}}_{t,1},  & \|\lambda_{p,2}(\mathbf{DE_t R R\T}\otimes \mathbf{I}_3)\mathbf{z}_{t,1}\| < 1,\\
+            \frac{\tilde{\mathbf{z}}_{t,1}}{\|(\mathbf{DE_t R R\T}\otimes \mathbf{I}_3)\tilde{\mathbf{z}}_{t,1}\|},  & \textrm{otherwise}.
+        \end{cases}
+    \end{equation}
+    On the sliding surface, the dynamics of the error subsystem \eqref{eq:distributed_formation_error_subsystem_1} are given by
+    \begin{equation}\label{eq:sliding_subsystem}
+        \dot{\tilde{\mathbf{z}}}_{t,1} = -\frac{v_{2,\max}}{\lambda_{d,2}}\begin{cases}
+            \lambda_{p,2}\tilde{\mathbf{z}}_{t,1},  & \|\lambda_{p,2}(\mathbf{DE_t R R\T}\otimes \mathbf{I}_3)\mathbf{z}_{t,1}\| < 1,\\
+            \frac{\tilde{\mathbf{z}}_{t,1}}{\|(\mathbf{DE_t R R\T}\otimes \mathbf{I}_3)\tilde{\mathbf{z}}_{t,1}\|},  & \textrm{otherwise},
+        \end{cases}
+    \end{equation}
+    which is \gls{usges}. When $\Tilde{\mathbf{z}}_{t,1}$ is inside the ball $\mathcal{B}_1 \coloneqq \{\Tilde{\mathbf{z}}_{t,1} \colon \|\Tilde{\mathbf{z}}_{t,1}\| < \frac{1}{\lambda_{p,2}\sigma_{\max}^2}\}$, where $\sigma_{\max}$ is the largest singular value of $(\mathbf{DE_t R R\T}\otimes \mathbf{I}_3)$, the system is exponentially stable due to the negative linear feedback. Outside the ball $\mathcal{B}_1$, the system is asymptotically stable which we show with the Lyapunov candidate function
+    \begin{equation}\label{eq:sliding_mode_lyapunov}
+        V_z(\tilde{\mathbf{z}}_{t,1}) = \frac{1}{2}\tilde{\mathbf{z}}_{t,1}\T\tilde{\mathbf{z}}_{t,1}.
+    \end{equation}
+    The time derivative of $V_z$ along the trajectories of \eqref{eq:sliding_subsystem} when the system is outside the linear region is bounded by
+    \begin{equation}
+        \dot{V}_z \leq -\frac{v_{2,max}}{\lambda_{d,2}\sigma_{max}^2}\|\tilde{\mathbf{z}}_{t,1}\|,
+    \end{equation}
+which results in asymptotic stability. Furthermore, it holds for any $\tilde{\mathbf{z}}_{t,1} \in \{\tilde{\mathbf{z}}_{t,1} \in \mathbb R^{3n-3} \colon \|\tilde{\mathbf{z}}_{t,1}\| \leq r\}$ that
+\begin{equation}
+    \dot{V}_z \leq -\frac{v_{2,max}}{\lambda_{d,2}\sigma_{max}^2 r}\|\tilde{\mathbf{z}}_{t,1}\|^2.
+\end{equation}
+Thus, all requirements for \cite[Theorem 5]{pettersen_lyapunov_2017} are satisfied, and the system is \gls{usges}. Moreover, as a result, when $\mathbf{s}$ is non-zero it can be shown that
+\begin{equation}\label{eq:local_iss}
+    \dot{V}_z \leq -\alpha_3(\|\tilde{\mathbf{z}}_{t,1}\|), \quad \forall \|\tilde{\mathbf{z}}_{t,1}\| \geq \frac{\lambda_{d,2}}{v_{2,\max}\lambda_{p,2}}\|\mathbf{s}\|,\;
+    \|\mathbf{s}\| \leq \frac{v_{2,\max}}{\sigma_{\max}^2}, 
+\end{equation}
+for some $\mathcal{K}_\infty$ class function $\alpha_3$ which implies local input-to-state stability of the system when $\mathbf{s}$ is viewed as the input.
+
+    The control input $\bm{\mu}_f$ can be written in terms of the sliding variable as follows
+    \begin{equation}
+        \bm{\mu}_f = \dot{\tilde{v}}_d - (\mathbf{D E_t RR\T}\otimes \mathbf{I}_3)\mathbf{s} - \gamma \mathrm{sat}\left(\frac{1}{\varepsilon}(\mathbf{D E_t RR\T}\otimes \mathbf{I}_3)\mathbf{s}\right).
+    \end{equation}
+    The time derivative of the sliding variable along the trajectories of \eqref{eq:distributed_formation_error_system} is given by
+    \begin{equation}\label{eq:sliding_derivative}
+    \begin{split}
+        \dot{\mathbf{s}} = &-\lambda_{d,2} \bigg((\mathbf{E_t\T D E_t R R\T} \otimes \mathbf{I}_3) \mathbf{s} + \mathbf{E}_t\T\gamma \mathrm{sat}\left(\frac{1}{\varepsilon}(\mathbf{DE_t R R\T}\otimes \mathbf{I}_3)\mathbf{s}\right)\\
+        &- (\mathbf{E}_t\T\otimes \mathbf{I}_3) \bm{\mu}_p\bigg) + v_{2,\max} \begin{cases}
+            \lambda_{p,2}\tilde{\mathbf{z}}_2, & \|\lambda_{p,2}(\mathbf{DE_t R R\T}\otimes \mathbf{I}_3)\tilde{\mathbf{z}}_{t,1}\| < 1,\\
+            0, & \textrm{otherwise}.
+        \end{cases}       
+    \end{split}
+    \end{equation}
+
+    
+    Consider the following Lyapunov function
+    \begin{equation}
+        V_s(\mathbf{s}) = \frac{1}{2}\mathbf{s}\T (\mathbf{RR}\T \otimes \mathbf{I}_3)\mathbf{s}. 
+    \end{equation}
+    The matrix $\mathbf{R}\mathbf{R}\T$ evaluates to the following:
+\begin{equation}
+    \mathbf{R}\mathbf{R}\T = \mathbf{I}_{n-1} + \left((\mathbf{E_t}\T\mathbf{E}_t)^{-1} \mathbf{E}_t\T \mathbf{E}_c\right)\left((\mathbf{E_t}\T\mathbf{E}_t)^{-1} \mathbf{E}_t\T \mathbf{E}_c\right)\T.
+\end{equation}
+The product of a matrix with its transpose is always at least positive semi-definite, and the sum of a positive definite matrix and a positive semi-definite matrix is positive definite. Therefore $\mathbf{R}\mathbf{R}\T$ is positive definite and $V$ is a valid Lyapunov function.
+    
+    The time derivative of $V$ is given by
+    \begin{equation}\label{eq:V_s_derivative}
+        \begin{split}
+            \dot{V}_s = &-\lambda_{d,2}\mathbf{s}\T(\mathbf{RR\T E_t\T D E_t R R\T}\otimes \mathbf{I}_3)\mathbf{s} \\
+            &-\lambda_{d,2}\mathbf{s}\T (\mathbf{RR\T E}_t\T \otimes \mathbf{I}_3)\gamma\mathrm{sat}\left(\frac{1}{\varepsilon}(\mathbf{DE_t R R\T}\otimes \mathbf{I}_3)\mathbf{s}\right)\\
+            &+ \mathbf{s}\T(\mathbf{RR\T E}_t\T\otimes \mathbf{I}_3)\bigg(\lambda_{d,2}\bm{\mu}_p\\
+            &+ v_{2,\max}\begin{cases}
+            \lambda_{p,2}(\mathbf{v}-\mathbf{v}_d), & \|\lambda_{p,2}(\mathbf{DE_t R R\T}\otimes \mathbf{I}_3)\tilde{\mathbf{z}}_{t,1}\| < 1,\\
+            0, & \textrm{otherwise}
+        \end{cases}\bigg).
+        \end{split}
+    \end{equation}
+    From \cite[Theorem 3.3]{zelazo_agreement_2007}, the null-space of $\mathbf{E}_t$ is empty, and the null-space of $\mathbf{RR}\T$ is empty because it is a positive definite matrix. Then, $\mathbf{R}\mathbf{R}\T\mathbf{E}_t\T\mathbf{D}\mathbf{E}_t \mathbf{R}\mathbf{R}\T$ is positive definite:
+\begin{gather}
+    \mathbf{x}\T\mathbf{R}\mathbf{R}\T\mathbf{E}_t\T\mathbf{D}\mathbf{E}_t \mathbf{R}\mathbf{R}\T \mathbf{x} = \|\mathbf{D}^{1/2}\mathbf{E}_t\mathbf{R}\mathbf{R}\T \mathbf{x}\|_2^2 > 0, \quad \forall \mathbf{x} \neq \mathbf{0}.
+\end{gather}
+
+    
+    % \textcolor{DarkOrange}{I feel like the following part is a bit weak. Can I do something more rigorous than claiming without proof that the velocity error is bounded? I guess the "correct" thing to do would be to consider each element of the vector $(\mathbf{E_t R R\T}\otimes \mathbf{I}_3)\mathbf{s}$ independently and show that the choice $\gamma(v_i) > \bar{\mu}_p + v_{2,\max} \lambda_{p,2}/\lambda_{d,2} |v_i-v_{d,i}|$ ensures stability.} 
+    
+    We now introduce the following change of variables
+    \begin{equation}
+        \hat{\mathbf{s}} \coloneqq (\mathbf{E_t R R}\T \otimes \mathbf{I}_3)\mathbf{s},
+    \end{equation}
+    and note the following bound
+    \begin{equation}
+        \bm{\mu}_{p,i} + \frac{v_{2,\max}\lambda_{p,2}}{\lambda_{d,2}}
+            (\mathbf{v}_i-\mathbf{v}_{d,i}) \leq \bar{\mu}_p + \frac{v_{2,\max}\lambda_{p,2}}{\lambda_{d,2}}|\mathbf{v}_i-\mathbf{v}_{d,i}| \coloneqq \rho(\mathbf{v}_i).
+    \end{equation}
+    We let $\gamma$ be a function of the velocity so that $\gamma_i = \rho(\mathbf{v}_i) + \beta_0$ for some constant $\beta_0 > 0$. Now, \eqref{eq:V_s_derivative} can be bounded by
+    \begin{equation}
+        \dot{V}_s \leq \lambda_{d,2}\sum_{i=1}^{3n} -\gamma_i \hat{\mathbf{s}}_i \mathrm{sat}(\frac{\sqrt{\mathbf{D}_{ii}}}{\varepsilon} \hat{\mathbf{s}}_i) + |\hat{\mathbf{s}}_i|\rho(\mathbf{v}_i).
+    \end{equation}
+    Consider every element of the sum separately. In the region $|\hat{\mathbf{s}}_i| \geq \frac{\varepsilon}{\sqrt{\mathbf{D}_{ii}}}$, we have
+    \begin{equation}\label{eq:sliding_lyapunov_derivative}
+        \dot{V}_{s,i} \leq \lambda_{d,2} (-\gamma_i + \rho(\mathbf{v}_i))|\hat{\mathbf{s}}_i| \leq -\lambda_{d,2}\beta_0|\hat{\mathbf{s}}_i|.
+    \end{equation}
+    This bound shows that whenever $|\hat{\mathbf{s}}_i (0)| > \frac{\varepsilon}{\sqrt{\mathbf{D}_{ii}}}$, $|\hat{\mathbf{s}}_i (t)| $ will decrease until it reaches the set $\{\hat{\mathbf{s}}_i \colon |\hat{\mathbf{s}}_i| \leq \frac{\varepsilon}{\sqrt{\mathbf{D}_{ii}}}\}$ in finite time and remains inside thereafter. We note that in practice, the velocity is upper bounded by the vehicle's maximum operating speed and $\gamma_i$ can therefore be chosen as a constant.
+
+    We will now show that the system is bounded and, in the limit $\varepsilon \rightarrow 0$, asymptotically stable. This part of the analysis closely follows \cite[Theorem 14.1]{khalil_nonlinear_2002}. Consider a positive constant $c$ and the following chain of implications
+    \begin{equation}
+        \begin{split}
+            |\hat{\mathbf{s}}_i| \leq c \;\forall\; i \in \{1,\ldots,n\} \implies \|\hat{\mathbf{s}}\| \leq k_1 c \implies \|\mathbf{s}\| \leq \frac{k_1 c}{\sigma_{\min}^2},
+        \end{split}
+    \end{equation}
+    where $k_1$ is some positive constant and $\sigma_{\min}$ is the smallest singular value of $\mathbf{E_t R R\T}$. Following \eqref{eq:local_iss}, if we choose $c \leq \frac{v_{2,\max} \sigma_{\min}^2}{k_1 \sigma_{\max}^2}$, then,
+    \begin{equation}
+    \begin{split}
+        V_z(\tilde{\mathbf{z}}_{t,1}) \geq \frac{1}{2} \left(\frac{\lambda_{d,2}k_1 c}{v_{2,\max} \lambda_{p,2} \sigma_{\min}^2}\right)^2 &\implies \|\tilde{\mathbf{z}}_{t,1}\| \geq \frac{\lambda_{d,2}k_1 c}{v_{2,\max} \lambda_{p,2} \sigma_{\min}^2} \geq \frac{\lambda_{d,2}\|\mathbf{s}\|}{v_{2,\max} \lambda_{p,2}} \\
+        &\implies \dot{V}_z \leq -\alpha_3(\|\tilde{\mathbf{z}}_{t,1}\|) \leq -\alpha_3\left(\frac{\lambda_{d,2}k_1 c}{v_{2,\max} \lambda_{p,2}}\right),   
+    \end{split}
+    \end{equation}
+    which shows that the set $\{\tilde{\mathbf{z}}_{t,1} \colon V_z(\tilde{\mathbf{z}}_{t,1}) \leq c_0\}$ with $c_0 \geq \frac{1}{2} \left(\frac{\lambda_{d,2}k_1 c}{v_{2,\max} \lambda_{p,2} \sigma_{\min}^2}\right)^2$ is positively invariant because $\dot{V}$ is negative on the boundary $V_z(\tilde{\mathbf{z}}_{t,1}) = c_0$. Consequently, it follows that the set
+    \begin{equation}\label{eq:Omega}
+        \Omega = \left \{\tilde{\mathbf{z}}_{t,1} \colon V_z(\tilde{\mathbf{z}}_{t,1}) \leq c_0\right\} \times \left\{ \mathbf{s} \colon |\hat{\mathbf{s}}_i| \leq c \;\forall\; 1\leq i\leq n\right\},
+    \end{equation}
+    is positively invariant when $c \geq \frac{\varepsilon}{\sqrt{\mathbf{D}_{ii}}}$. It serves as an estimate of the control law's region of attraction. After some finite time, we have $|\hat{\mathbf{s}}_i| \leq \frac{\varepsilon}{\sqrt{\mathbf{D}_{ii}}}$. It follows from \eqref{eq:sliding_mode_lyapunov} and \eqref{eq:local_iss} that $\dot{V}_z \leq - \alpha_3\left(\frac{\lambda_{d,2} k_1 \varepsilon}{v_{2,\max} \lambda_{p,2} \sigma_{\min}^2}\right)$ for all $ V_z(\tilde{\mathbf{z}}_{t,1}) \geq \frac{1}{2} \left(\frac{\lambda_{d,2}k_1 \varepsilon}{v_{2,\max} \lambda_{p,2} \sigma_{\min}^2}\right)^2$. Therefore, the trajectories will eventually reach the positive invariant set
+    \begin{equation}\label{eq:Omega_eps}
+        \Omega_{\varepsilon} = \left \{\tilde{\mathbf{z}}_{t,1} \colon V_z(\tilde{\mathbf{z}}_{t,1}) \leq \frac{1}{2} \left(\frac{\lambda_{d,2}k_1 \varepsilon}{v_{2,\max} \lambda_{p,2} \sigma_{\min}^2}\right)^2 \right\} \times \left\{ \mathbf{s} \colon |\hat{\mathbf{s}}_i| \leq \frac{\epsilon}{\sqrt{\mathbf{D}_{ii}}} \;\forall\; 1\leq i\leq n\right\}.
+    \end{equation}
+    The set $\Omega_{\varepsilon}$ can be made arbitrarily small by choosing $\varepsilon$ small enough. In the limit, $\Omega_{\varepsilon}$ shrinks to the origin and the system is asymptotically stable.
+    
+    
+    
+    
+    % \begin{equation}
+    % \begin{split}
+    %     \dot{V}_s \leq &-\lambda_{d,2}\|(\mathbf{D}^{1/2}\mathbf{E}_t\mathbf{R}\mathbf{R}\T\otimes \mathbf{I}_3) \mathbf{s}\|_2^2 \\
+    %         &-\lambda_{d,2}\gamma\|(\mathbf{E_t R R\T}\otimes \mathbf{I}_3)\mathbf{s}\|_1\\
+    %         &+ \|(\mathbf{E_t R R\T}\otimes \mathbf{I}_3)\mathbf{s}\|_1\bigg(\lambda_{d,2}n\bar{\mu}_p+ v_{2,\max}
+    %         \lambda_{p,2}\|\mathbf{v}-\mathbf{v}_d\|\bigg). 
+    % \end{split}
+    % \end{equation}
+    % The velocity error $\|\mathbf{v}-\mathbf{v}_d\|$ is bounded because the operating velocity of the vehicle is bounded, and because of the nature of the saturated sliding surface. In particular, at the sliding surface, the following bound holds: 
+    % \begin{equation}
+    %     \|\tilde{\mathbf{z}}_{t,2}\| = \|(\mathbf{E}_t\otimes \mathbf{I}_3)(\mathbf{v}-\mathbf{v}_d)\|\leq \frac{v_{2,\max}}{\lambda_{d,2}}.
+    % \end{equation}
+    % The derivative of the Lyapunov function is negative definite if $\gamma$ is chosen sufficiently large
+    % \begin{equation}
+    %     \gamma = \beta_0 + n \bar{\mu}_p + \frac{v_{2,\max}\lambda_{p_2}}{\lambda_{d,2}} \max_t \|\mathbf{v}(t)-\mathbf{v}_d(t)\|.
+    % \end{equation}
+    % Then we have
+    % \begin{equation}
+    %     \begin{split}
+    %     \dot{V}_s \leq &-\lambda_{d,2}\|(\mathbf{D}^{1/2}\mathbf{E}_t\mathbf{R}\mathbf{R}\T\otimes \mathbf{I}_3) \mathbf{s}\|_2^2 -\lambda_{d,2}\beta_0\|(\mathbf{E_t R R\T}\otimes \mathbf{I}_3)\mathbf{s}\|_1,
+    % \end{split}
+    % \end{equation}
+    % which ensures that all trajectories will reach the manifold $\mathbf{s} = \mathbf{0}$ in finite time and those on the manifold cannot leave it.
+
+
+\begin{lemma}\label{lemma:distributed_formation}
+Let the fleet communication graph $\mathcal{G}$ be connected, and let $\lambda_{p,2}$, $\lambda_{d,2}$, $v_{2,\max}$, $\beta_0$, and $\varepsilon$ be positive constants and choose $\gamma_i$ so that  
+\begin{equation}
+    \gamma_i \geq \beta_0 + \bar{\mu}_p + \frac{v_{2,\max} \lambda_{p,2}}{\lambda_{d,2}}|\mathbf{v}_i - \mathbf{v}_{d,i}|.
+\end{equation}    
+    Then, for all $\tilde{\mathbf{z}}_{t}(0) \in \Omega$, defined by \eqref{eq:Omega}, the system \eqref{eq:distributed_formation_error_system} subject to controller \eqref{eq:mu_f_z} reaches the positively invariant set $\Omega_{\varepsilon}$, defined by \eqref{eq:Omega_eps}, in finite time. In the limit $\varepsilon \rightarrow 0$ the set $\Omega_{\varepsilon}$ reduces to the origin and the system is asymptotically stable.
+\end{lemma}
+
+We further note that the sliding-variable subsystem is globally asymptotically stable because $\dot{V}_{s,i}$ for all $i$, given by \eqref{eq:sliding_lyapunov_derivative}, is globally negative. Therefore, when the system starts outside of $\Omega$ the states $\tilde{\mathbf{z}}_{t,1}$ may initially grow as $\dot{V}_z \geq 0$, but there exists a time $T > 0$ after which $\|\mathbf{s}\| \leq \frac{v_{2,\max}}{\sigma_{\max}^2}$ and thus $\dot{V}_z \leq -\alpha_3(\|\tilde{\mathbf{z}}_{t,1}\|)$. We can therefore conclude that the system is globally ultimately bounded. Furthermore, because the sliding variables are saturated in position, any initial configuration with zero initial velocity will be within the set $\Omega$.
+
+\section{Path-following task}
+In this section, we will analyze the stability of the path-following task. Similarly to the analysis of the centralized control law we will use cascaded system theory to analyze the perturbed LOS dynamics. The following analysis largely follows insights from \cite{matous_formation_2023}. To simplify analysis we assume that the desired path is a straight line. Consequently, the rotation matrix $\mathbf{R}_p$ is constant and independent of $\xi$, and the path function is given by
+\begin{equation}\label{eq:straight_line_path}
+    \mathbf{p}_p(\xi) = \mathbf{p}_0 + \mathbf{R}_p [\xi,\,0,\,0]\T.
+\end{equation}
+We also assume that there is no ocean current.
+
+\subsection{Closed-loop dynamics}
+In this section, we derive the closed-loop equations for the error variables.
+
+In the case of straight-line paths, the path-following task acceleration can be simplified to
+\begin{equation}
+    \dot{\mathbf{v}}_{3,i} = \dot{\mathbf{v}}_{LOS,d,i} + \Lambda_{LOS}(\mathbf{v}_{LOS,d,i} - \mathbf{v}_i),
+\end{equation}
+where the desired \gls{los} acceleration is given by
+\begin{equation}\label{eq:desired_LOS_derivative_simplified}
+\begin{split}
+        \dot{\mathbf{v}}_{LOS,d} &= \mathbf{R}_p \left[ 0, -\dot{y}_b^p, -\dot{z}_b^p \right]\T \frac{U_{LOS}}{D}\\ &- \mathbf{R}_p \left[ \Delta, -y_b^p, -z_b^p \right]\T \frac{U_{LOS}}{D^2}\dot{D}.
+    \end{split}
+\end{equation}
+The actually applied acceleration is given by $\bm{\mu}_{p,i}$ from \eqref{eq:distributed_applied_accelerations}, however, because the communication graph is undirected, the following holds
+\begin{equation}
+    \sum_{i=1}^n \bm{\mu}_{p,i} = \sum_{i=1}^n \frac{1}{|\mathcal{N}_i|+1}\left(\dot{\mathbf{v}}_{3,i}+\sum_{j\in\mathcal{N}_i} \dot{\mathbf{v}}_{3,j}\right) = \sum_{i=1}^n \dot{\mathbf{v}}_{3,i}.
+\end{equation}
+The local averaging can therefore be disregarded in the following analysis.
+
+Also following the straight-line simplification, the barycenter kinematics are given by
+\begin{equation}
+    \begin{split}
+        \dot{\mathbf{p}}_b^p &= \mathbf{R}_p\T \left(\frac{1}{n}\sum_{i=1}^n \mathbf{v}_{i} - \dot{\mathbf{p}}_p(s)\right),\\
+        & = \frac{1}{n}\sum_{i=1}^N\mathbf{R}_p\T \left(\mathbf{v}_{LOS,d,i} + \widetilde{\mathbf{v}}_{i}\right) - [\dot{\xi},\, 0,\, 0]\T.
+    \end{split}\label{eq:p_b_CL_1}
+\end{equation}
+The velocity error $\widetilde{\mathbf{v}}_i$ is defined as 
+\begin{equation}
+    \widetilde{\mathbf{v}}_i = \mathbf{v}_i - \mathbf{v}_{LOS,d,i},
+\end{equation}
+and we analyze the dynamics of the sum $\sum_{i=1}^n\widetilde{\mathbf{v}}_i$:
+\begin{equation}
+\begin{split}
+    \sum_{i=1}^n \dot{\widetilde{\mathbf{v}}}_i &= \sum_{i=1}^n \dot{\mathbf{v}}_{3,i} + \bm{\mu}_{f,i} - \dot{\mathbf{v}}_{LOS,d,i},\\
+    &=-\sum_{i=1}^n \Lambda_{LOS}\widetilde{\mathbf{v}}_i.
+\end{split}
+\end{equation}
+This system is linear and exponentially stable. The consensus-based formation-keeping accelerations cancel out in the sum due to the undirected communication graph.
+
+
+Each individual vehicle's estimate of the barycenter is given by 
+\begin{equation}\label{eq:barycenter_estimate}
+    \tilde{\mathbf{p}}_{i}^p= \mathbf{R}_p\T (\mathbf{p}_i - \mathbf{p}_p (\xi_i) - \mathbf{R}_p \mathbf{p}_{f,i}^f).
+\end{equation}
+The barycenter error is then defined as
+\begin{equation}
+    \widetilde{\mathbf{p}}_{b,i}^p = \tilde{\mathbf{p}}_{i}^p- \mathbf{p}_b^p.
+\end{equation}
+The barycenter error is directly dependent on the formation-keeping error $\widetilde{\mathbf{z}}_{t,1}$, which is bounded or asymptotically stable according to Lemma~\ref{lemma:distributed_formation}. To show this, we first define the "true" path-progress parameter $\xi$ as the mean of the individual estimates:
+\begin{equation}
+    \xi \coloneqq \frac{1}{n}\sum_{i=1}^n \xi_i.
+\end{equation}
+Then, we rewrite the barycenter equation:
+\begin{equation}
+\begin{split}
+    \mathbf{p}_b^p &= \mathbf{R}_p\T (\frac{1}{n}\sum_{i=0}^n \mathbf{p}_i - \mathbf{p}_p),\\
+    &= \mathbf{R}_p^T(\frac{1}{n}\sum_{i=0}^n \mathbf{p}_i - \frac{1}{n} \sum_{i=1}^n (\mathbf{p}_{p,0} + \mathbf{R}_p 
+        [\xi_i ,0,\,0]\T + \mathbf{R}_p \mathbf{p}_{f,i}^f)),\\
+    &= \mathbf{R}_p\T (\frac{1}{n} \mathbf{1}_{n,1}\T \otimes \mathbf{I}_3)(\mathbf{p}-\mathbf{p}_d).
+\end{split}
+\end{equation}
+Here, we used the straight-line assumption and the fact that the formation vectors $\mathbf{p}_{f,i}^f$ sum to zero. We furthermore rewrite \eqref{eq:barycenter_estimate} in the simplified form
+\begin{equation}
+    \tilde{\mathbf{p}}_{i}^p= \mathbf{R}_p\T (\mathbf{p}_i - \mathbf{p}_{d,i}).
+\end{equation}
+Now, the barycenter error $\widetilde{\mathbf{P}}_b^p \coloneqq [\widetilde{\mathbf{p}}_{b,1}^p,\ldots, \widetilde{\mathbf{p}}_{b,n}^p]\T$ can be written in the following form
+\begin{equation}\label{eq:P_bp_error_1}
+    \widetilde{\mathbf{P}}_b^p = (\mathbf{I}_n\otimes \mathbf{R}_p\T) (\mathbf{I}_n - \frac{1}{n}\mathbf{1}_{n,n}\otimes \mathbf{I}_3)(\mathbf{p}-\mathbf{p}_d),
+\end{equation}
+where $\mathbf{I}_n - \frac{1}{n}\mathbf{1}_{n,n}$ can be recognized as the scaled Laplacian matrix of a fully connected graph with $n$ nodes. Consequently, following \eqref{eq:laplacian_alternative} and \eqref{eq:z_t1_def}, \eqref{eq:P_bp_error_1} can be rewritten in the following way:
+\begin{equation}
+    \begin{split}
+        \widetilde{\mathbf{P}}_b^p &= (\mathbf{I}_n\otimes \mathbf{R}_p\T) (\frac{1}{n}\mathbf{L}_F\otimes \mathbf{I}_3)(\mathbf{p}-\mathbf{p}_d),\\
+        &= (\mathbf{I}_n\otimes \mathbf{R}_p\T) (\frac{1}{n}\mathbf{E}_t\mathbf{R}\mathbf{R}\T\mathbf{E}_t\T\otimes \mathbf{I}_3)(\mathbf{p}-\mathbf{p}_d),\\
+        &=
+        (\mathbf{I}_n\otimes \mathbf{R}_p\T) (\frac{1}{n}\mathbf{E}_t\mathbf{R}\mathbf{R}\T\otimes \mathbf{I}_3)\tilde{\mathbf{z}}_{t,1}.
+    \end{split}
+\end{equation}
+Thus, the barycenter norm of the barycenter error can be bounded by the following inequality
+\begin{equation}
+    \left\|\widetilde{\mathbf{P}}_b^p \right\| \leq \frac{1}{n}\left\|\mathbf{E}_t\mathbf{R}\mathbf{R}\T\right\| \|\tilde{\mathbf{z}}_{t,1}\|.
+\end{equation}
+
+
+The desired LOS velocity calculated by vehicle $i$ can be expressed as 
+\begin{equation}\label{eq:v_LOS_d_decomposition}
+    \mathbf{v}_{LOS,d,i} = \mathbf{v}_{LOS,d} + \widetilde{\mathbf{v}}_{LOS,d,i},
+\end{equation}
+where
+\begin{equation}
+    \widetilde{\mathbf{v}}_{LOS,d,i} = \mathbf{R}_p [\Delta, \, -\tilde{y}_{i}^p, -\tilde{z}_{i}^p]\T \frac{U_{LOS}}{D_i} - \mathbf{R}_p[\Delta, \, -y_{b}^p, -z_{b}^p]\T \frac{U_{LOS}}{D}.
+\end{equation}
+It follows that $\widetilde{\mathbf{v}}_{LOS,d,i} = \mathbf{0}$ if $\widetilde{\mathbf{p}}_{b,i} = \mathbf{0}$. Furthermore, it can be shown that the norm of the \gls{los} velocity error satisfies the following inequality
+\begin{equation}\label{eq:v_los_d_bound}
+    \|\widetilde{\mathbf{v}}_{LOS,d,i}\| \leq \frac{U_{LOS}}{\Delta} \|\widetilde{\mathbf{p}}_{b,i} \|.
+\end{equation}
+
+
+We will now derive the closed-loop expression for the path-parameter error $\tilde{\xi}_i = \xi_i - \xi$. First, a closed-loop expression for $\dot{\xi}$ is given by
+\begin{equation}\label{eq:dot_xi}
+    \dot{\xi} = \frac{1}{n}\sum_{i=1}^n \dot{\xi}_i = \frac{1}{n}\sum_{i=1}^n U_{LOS}\left(\frac{\Delta}{D_i} + k_\xi \frac{\tilde{x}_{i}^p}{\sqrt{1 + (\tilde{x}_{i}^p)^2}}\right).
+\end{equation}
+The consensus terms cancel out because the vehicles communicate over an undirected graph, and from the definition of a straight-line path in \eqref{eq:straight_line_path}, it follows that $\| \frac{\partial \mathbf{p}_p(\xi)}{\partial \xi} \| = 1$.
+
+We define the path parameter update errors,  $g_1, \ldots , g_N$, as
+\begin{equation}\label{eq:g_i}
+  g_i = U_{LOS\!} \left(\!\frac{\Delta}{D_i} - \frac{\Delta}{D} + k_\xi \! \left(\frac{\tilde{x}_{i}^p}{\sqrt{1 + (\tilde{x}_{i}^p)^2}} - \frac{x_{b}^p}{\sqrt{1 + (x_{b}^p)^2}}\right)\!\right).
+\end{equation}
+It can be shown that $g_i$ satisfies the following inequality
+\begin{equation}
+    |g_i| \leq U_{LOS}\left(\frac{1}{\Delta} + k_\xi\right)\|\widetilde{\mathbf{p}}_{b,i} \| + U_{LOS} k_\xi |\tilde{\xi}_i|.
+        \label{eq:g_i_bound}
+\end{equation}
+
+Inserting for \eqref{eq:g_i} in \eqref{eq:dot_xi} results in
+\begin{equation}
+    \dot{\xi} = U_{LOS} \left(\!\frac{\Delta}{D} + k_\xi \frac{x_{b}^p}{\sqrt{1 + (x_{b}^p)^2}}\right) + \frac{1}{n} \sum_{i=1}^N g_i.
+        \label{eq:s_dot_CL}
+\end{equation}
+The time derivative of $\tilde{\xi}_i$ is given by
+\begin{equation}
+    \dot{\tilde{\xi}}_i = c_\xi \sum_{i\in\mathcal{N}_i}(\tilde{\xi}_j-\tilde{\xi}_i) + g_i - \frac{1}{n}\sum_{j=1}^n g_j,
+\end{equation}
+which can be written in matrix form
+\begin{equation}
+    \dot{\widetilde{\bm{\Xi}}} = -c_\xi \mathbf{L} \widetilde{\bm{\Xi}} + \frac{1}{n} \mathbf{L}_{F} \mathbf{G},
+\label{eq:S_tilde_CL}
+\end{equation}
+where $\widetilde{\bm{\Xi}} = [\tilde{\xi}_1, \ldots, \tilde{\xi}_n]\T$, $\mathbf{G} = [g_1, \ldots, g_n]\T$.
+
+Finally, substituting \eqref{eq:v_LOS_d_decomposition}, \eqref{eq:s_dot_CL}, the barycenter dynamics \eqref{eq:p_b_CL_1} can be written as
+\begin{equation}\label{eq:path_following_subsystem}
+    \begin{split}
+    \dot{\mathbf{p}}_b^p = &- U_{LOS} \left[k_\xi\frac{x_{b}^p}{\sqrt{1 + (x_{b}^p)^2}},\, \frac{y_b^p}{D},\, \frac{z_b^p}{D} \right]\T\\
+    &+ \frac{1}{n}\sum_{i=1}^n \left(\mathbf{R}_p^T(\widetilde{\mathbf{v}}_{LOS,d,i} + \widetilde{\mathbf{v}}_i) + g_i\right).
+    \end{split}
+\end{equation}
+
+\subsection{Closed-loop stability}
+In this section, we will analyze the stability of the error variables $\tilde{\xi}_i$, $\widetilde{\mathbf{v}}_i$, and finally $\mathbf{p}_b^p$. Our aim is to show uniform global asymptotic stability. We will therefore use \cite[Theorem 2.1]{lamnabhi-lagarrigue_2_2005} to analyze the cascaded systems, which is similar to \cite[Proposition 9]{pettersen_lyapunov_2017}, but provides weaker stability properties under weaker assumptions on the perturbing and perturbed systems. For convenience, we summarize the theorem here.
+
+Consider a cascaded system
+\begin{subequations}\label{eq:loria_system}
+\begin{align}
+    \dot{\mathbf{x}}_1 &= f_1(t,\mathbf{x}_1) + g(t,\mathbf{x}) \mathbf{x}_2,\\
+    \dot{\mathbf{x}}_2 &= f_2(t,\mathbf{x}_2). \label{eq:loria_x2}
+\end{align}
+\end{subequations}
+The theorem \cite[Theorem 2.1]{lamnabhi-lagarrigue_2_2005} states that if the nominal system
+\begin{equation}\label{eq:loria_nominal}
+    \dot{\mathbf{x}}_1 = f_1(t,\mathbf{x}_1)
+\end{equation}
+is \gls{ugas}, the trajectories of \eqref{eq:loria_x2} are uniformly globally bounded, and the following three assumptions below are satisfied, then the solutions of system \eqref{eq:loria_system} are uniformly globally bounded. Moreover, if the origin of system \eqref{eq:loria_x2} is \gls{ugas}, then so is the origin of the cascade \eqref{eq:loria_system}.
+
+\begin{enumerate}
+    \item There exist constants $c_1, c_2, \eta > 0$ and a  Lyapunov function $V(t,\mathbf{x}_1)$ for \eqref{eq:loria_nominal} such that $V \colon \mathbb R_{\geq0}\times \mathbb{R}^n \rightarrow \mathbb R_\geq0$ is positive definite, radially unbounded, $\dot{V}(t,\mathbf{x}_1) \leq 0$ and
+    \begin{subequations}
+        \begin{align}
+            \norm{\frac{\partial V}{\partial \mathbf{x}_1}} \norm{\mathbf{x}_1} &\leq c_1 V,& \forall&\norm{\mathbf{x}_1} \geq \eta, \\
+            \norm{\frac{\partial V}{\partial \mathbf{x}_1}} &\leq c_2,& \forall&\norm{\mathbf{x}_1} \leq \eta.
+        \end{align}
+    \end{subequations}
+    \item There exist two continuous functions $\theta_1, \theta_2: \mathbb{R}_{\geq 0} \rightarrow \mathbb{R}_{\geq 0}$ such that
+    \begin{equation}
+        \norm{g(t, \mathbf{x})} \leq \theta_1 \left(\norm{\mathbf{x}_2}\right) + \theta_2 \left(\norm{\mathbf{x}_2}\right) \norm{\mathbf{x}_1}.
+    \end{equation}
+
+    \item There exists a class $\mathcal{K}$ function $\alpha(\cdot)$ such that, for all $t_0\geq 0$, the trajectories of the system \eqref{eq:loria_x2} satisfy
+    \begin{equation}
+        \int_{t_0}^\infty \|\mathbf{x}_2(t;t_0,\mathbf{x}_2(t_0))\| dt \leq \alpha(\|\mathbf{x}_2(t_0)\|).
+    \end{equation}
+\end{enumerate}
+
+\begin{lemma}
+    If the formation-keeping subsystem \eqref{eq:distributed_formation_error_system} satisfies the initial condition and all parameter conditions of Lemma~\ref{lemma:distributed_formation}, and the consensus gain $c_\xi$ is chosen such that $c_\xi \lambda_2 > 2 U_{LOS} k_\xi$, where $\lambda_2$ is the Fiedler eigenvalue of $\mathbf{L}$, then the solutions of system \eqref{eq:S_tilde_CL} are uniformly globally bounded. Furthermore, if $\varepsilon \rightarrow 0$ so that the origin of the formation-keeping subsystem \eqref{eq:distributed_formation_error_system} is asymptotically stable, then $\widetilde{\bm{\Xi}}=0$ is a \gls{ugas} equilibrium of \eqref{eq:S_tilde_CL}.
+\end{lemma}
+
+\begin{proof}
+    We analyze system \eqref{eq:S_tilde_CL} as a cascade where $\widetilde{\mathbf{P}}_b^p$ perturbs the dynamics of $\widetilde{\bm{\Xi}}$ through $\mathbf{G}$.
+
+    Substituting $\widetilde{\mathbf{P}}_b = \mathbf{0}$ into $\mathbf{G}$ we get the following \textit{nominal} dynamics of $\widetilde{\bm{\Xi}}$
+    \begin{equation}
+    \dot{\widetilde{\bm{\Xi}}} = -c_\xi \mathbf{L} \widetilde{\bm{\Xi}} + \frac{1}{n} \mathbf{L}_{F} \mathbf{G}_\xi.
+\label{eq:S_tilde_CL_nominal}
+\end{equation}
+From \eqref{eq:g_i_bound} the following inequality holds true for $\mathbf{G}_\xi$
+\begin{equation}
+    \|\mathbf{G}_\xi\| \leq U_{LOS} k_\xi \|\widetilde{\bm{\Xi}}\|.
+\end{equation}
+Consider the following Lyapunov function candidate
+\begin{equation}
+    V_\xi(\widetilde{\bm{\xi}}) = \frac{1}{2}\widetilde{\bm{\Xi}}\T\widetilde{\bm{\Xi}}.
+\end{equation}
+The derivative of $V_\xi$ along the trajectories of \eqref{eq:S_tilde_CL_nominal} is
+\begin{equation}
+     \dot{V}_{\xi} = - c_\xi \Tilde{\bm{\Xi}}\T \mathbf{L} \Tilde{\bm{\Xi}} + \frac{1}{n} \Tilde{\bm{\Xi}}\T \mathbf{L}_{F} \mathbf{G}_\xi
+            \leq  \left( -c_\xi \lambda_{2} + 2 U_{LOS} k_\xi \right) \|\Tilde{\bm{\Xi}}\|^2.
+\end{equation}
+We conclude that $\dot{V}_\xi$ is negative definite, and the nominal system is \gls{ges}, if $c_\xi \lambda_2 > 2U_{LOS} k_\xi$. The barycenter error $\widetilde{\mathbf{P}}_b^p$ is bounded by the formation-keeping error $\tilde{\mathbf{z}}_{t,1}$ which is asymptotically stable following Lemma~\ref{lemma:distributed_formation} when $\varepsilon \rightarrow \infty$.
+
+We now analyze the stability of the cascaded system under the assumption that the formation-keeping system is asymptotically stable. Consider the Lyapunov function candidate $V_\xi$. The first assumption in \cite[Theorem 2.1]{lamnabhi-lagarrigue_2_2005} is satisfied with $c_1 = \tfrac{1}{2}$, $\eta>0$, and $c_2 = \eta$. The second assumption is satisfied with $\theta_1(\widetilde{\mathbf{P}}_b^p) = U_{LOS}(\frac{1}{\Delta} + k_\xi)\|\widetilde{\mathbf{P}}_b^p\|$ and $\theta_2(\widetilde{\mathbf{P}}_b^p) = 0$. 
+
+The third assumption is shown in \cite[Remark 11]{pettersen_lyapunov_2017} to be satisfied for systems with the properties \gls{ugas} + \gls{ules}. Our formation-keeping system is locally and not globally asymptotically stable, but the results hold locally.
+
+Since the system is \gls{ules} there exist positive constants $c$, $k$, $\lambda$ independent on $t_0$, such that $\forall \widetilde{\mathbf{P}}_b^p \in \{\widetilde{\mathbf{P}}_b^p \colon \tilde{\mathbf{z}}_{t,1} \in \mathcal{B}_1\}$
+\begin{equation}
+    \|\widetilde{\mathbf{P}}_b^p(t;t_0, \widetilde{\mathbf{P}}_b^p(t_0))\| \leq k\|\widetilde{\mathbf{P}}_b^p(t_0)\|\mathrm{e}^{-\lambda(t-t_0)} \; \forall t\geq t_0 \geq 0.
+\end{equation}
+
+Since the system is asymptotically stable there exists a class $\mathcal{KL}$ function $\beta$ such that $\forall \widetilde{\mathbf{P}}_b^p \in \Omega_p$, where $\Omega_p$ is the set of barycenter errors such that $\tilde{\mathbf{z}}_{t,1} \in \Omega$, the following holds:
+\begin{equation}
+    \|\widetilde{\mathbf{P}}_b^p(t;t_0, \widetilde{\mathbf{P}}_b^p(t_0))\| \leq \beta(\|\widetilde{\mathbf{P}}_b^p(t_0)\|,t-t_0) \; \forall t\geq t_0 \geq 0.
+\end{equation}
+
+By the asymptotic stability property, we know that $\exists T>0$ such that at that $t=t_0+T$ the solution enters the neighborhood of the origin where the convergence is exponential. Consequently,
+\begin{equation}
+    \begin{split}
+        \int_{t_0}^\infty  \|\widetilde{\mathbf{P}}_b^p(t;t_0, \widetilde{\mathbf{P}}_b^p(t_0))\| dt &\leq \int_{t_0}^{t_0+T} \beta(\|\widetilde{\mathbf{P}}_b^p(t_0)\|,t-t_0)dt \\
+        &\;\;+\int_{t_0+T}^{\infty} k\|\widetilde{\mathbf{P}}_b^p(t_0)\|\mathrm{e}^{-\lambda(t-t_0)}dt\\
+        &\leq T\beta(\|\widetilde{\mathbf{P}}_b^p(t_0)\|,0) + \frac{k}{\lambda}\beta(\|\widetilde{\mathbf{P}}_b^p(t_0)\|,T).
+    \end{split}
+\end{equation}
+The right hand side is a class $\mathcal{K}$ function $\alpha( \|\widetilde{\mathbf{P}}_b^p(t_0)\|)$, and the third assumption is satisfied.
+
+All assumptions of \cite[Theorem 2.1]{lamnabhi-lagarrigue_2_2005} are satisfied, thus the origin of the cascaded system is \gls{ugas}.
+
+
+If the formation-keeping subsystem is only uniformly globally bounded, we can instead show uniformly globally boundedness of the path-parameter error system \eqref{eq:S_tilde_CL}. The derivative of $V_\xi$ along the trajectories of \eqref{eq:S_tilde_CL} are bounded by
+\begin{equation}
+     \dot{V}_{\xi}
+    \leq  \left( -c_\xi \lambda_{2} + 2 U_{LOS} k_\xi\right)\|\Tilde{\bm{\Xi}}\|^2  + 2U_{LOS}(\frac{1}{\Delta} + k_\xi) \left(\sup_t \|\widetilde{\mathbf{P}}_b^p(t)\|\right)\|\Tilde{\bm{\Xi}}\|.
+\end{equation}
+Which is negative outside the ball
+\begin{equation}
+   \mathcal{B}_2 \coloneqq \left\{ \|\Tilde{\bm{\Xi}}\| \colon \|\Tilde{\bm{\Xi}}\| \geq \frac{2U_{LOS}(\frac{1}{\Delta} + k_\xi)}{\left( 2 U_{LOS} k_\xi -c_\xi \lambda_{2}\right)}\left(\sup_t \|\widetilde{\mathbf{P}}_b^p(t)\|\right) \right\}.
+\end{equation}
+Therefore, the solutions to the system \eqref{eq:S_tilde_CL} will remain bounded if the formation-keeping errors remain bounded.
+
+\end{proof}
+
+Now, we analyze the path-following subsystem \eqref{eq:path_following_subsystem}
+
+\begin{lemma}\label{lemma:distributed_path_following}
+    The origin $\mathbf{p}_b^p$ is a \gls{ugas} equilibrium of the subsystem \eqref{eq:path_following_subsystem} if the formation-keeping task satisfies the asymptotic stability conditions of Lemma~\ref{lemma:distributed_formation} and the positive parameters $c_\xi, k_\xi, U_{LOS}$ are chosen such that $c_\xi \lambda_2 > 2 U_{LOS} k_\xi$. Moreover, if the formation-keeping task is not asymptotically stable but ultimately bounded, then the trajectories of subsystem \eqref{eq:path_following_subsystem} are ultimately bounded as well.
+\end{lemma}
+
+\begin{proof}
+    Similarly to the previous lemma and the proof of Theorem~\ref{theorem:path_following} we analyze the system as a cascade where $\widetilde{\bm{\Xi}}$, $\widetilde{\mathbf{P}}_b^p$ and $\widetilde{\mathbf{V}} = [\tilde{\mathbf{v}}_1, \ldots, \tilde{\mathbf{v}}_n]\T$ perturbs the dynamics of $\mathbf{p}_b^p$ through $\widetilde{\mathbf{V}}_{LOS,d}$, $\widetilde{\mathbf{V}}$ and $\mathbf{G}$. The nominal system
+    \begin{equation}
+        \dot{\mathbf{p}}_b^p = - U_{LOS} \left[k_\xi\frac{x_{b}^p}{\sqrt{1 + (x_{b}^p)^2}},\, \frac{y_b^p}{D},\, \frac{z_b^p}{D} \right]\T,
+    \end{equation}
+    was proved \gls{usges} in \cite{matous_singularity-free_2022} and we restated the proof in our proof of Theorem~\ref{theorem:path_following}.
+
+    Consider the Lyapunov function candidate
+    \begin{equation}
+        V_b(\mathbf{p}_b^p) = \frac{1}{2} (\mathbf{p}_b^p)\T \mathbf{p}_b^p.
+    \end{equation}
+    Similarly to the previous lemma, Assumption 3 in \cite[Theorem 2.1]{lamnabhi-lagarrigue_2_2005} is satisfied with $c_1 = \tfrac{1}{2}$, an arbitrary $\eta > 0$, and $c_2 = \eta$.
+
+    Let $\mathbf{h}$ denote the perturbing term in \eqref{eq:path_following_subsystem}:
+    \begin{equation}
+        \mathbf{h} = \frac{1}{n}\sum_{i=1}^n \left(\mathbf{R}_p^T(\widetilde{\mathbf{v}}_{LOS,d,i} + \widetilde{\mathbf{v}}_i) + g_i\right).
+    \end{equation}
+    From \eqref{eq:v_los_d_bound} and \eqref{eq:g_i_bound}, we arrive at the following upper bound on the norm of $\mathbf{h}$
+    \begin{equation}
+    \begin{split}
+        \|\mathbf{h}\| &\leq \left(2 \frac{U_{LOS}}{\Delta} + U_{LOS}k_\xi\right) \|\widetilde{\mathbf{P}}_b\| + U_{LOS}k_\xi \|\widetilde{\bm{\Xi}}\| + \|\widetilde{\mathbf{V}}\|,\\
+        &\leq  \left(2 \frac{U_{LOS}}{\Delta} + U_{LOS}k_\xi +1\right)\left \| \left[\widetilde{\mathbf{P}}_b,\, \widetilde{\bm{\Xi}},\, \widetilde{\mathbf{V}} \right]\right\|.
+    \end{split}
+    \end{equation}
+    Consequently, Assumption 4 in \cite[Theorem 2.1]{lamnabhi-lagarrigue_2_2005} is satisfied with $\theta_1 = (2 \frac{U_{LOS}}{\Delta} + U_{LOS}k_\xi +1)$ and $\theta_2 = 0$.
+
+    Assumption 5 in \cite[Theorem 2.1]{lamnabhi-lagarrigue_2_2005} is trivially satisfied for $\widetilde{\mathbf{V}}$ because of exponential stability. It was shown to be satisfied for $\widetilde{\mathbf{P}}_b$ in the previous lemma, and it is satisfied for $\widetilde{\bm{\Xi}}$ because the dynamics of $\widetilde{\bm{\Xi}}$ are \gls{ugas} and there exists a time $T$ after which it is \gls{usges} when the formation-keeping subsystem has entered the locally-exponentially-stable neighborhood.
+
+    All necessary assumptions of \cite[Theorem 2.1]{lamnabhi-lagarrigue_2_2005} are satisfied, and the path-following subsystem \eqref{eq:path_following_subsystem} is \gls{ugas}.
+
+    In the case when the formation-keeping subsystem is not asymptotically stable, but ultimately bounded, it can be shown similarly to the previous lemma that the solution to \eqref{eq:path_following_subsystem} remains bounded. The boundedness comes as a result of the perturbations entering the cascade linearly, i.e. $\theta_2 = 0$, and the nominal system being \gls{usges}.
+\end{proof}
+
+\section{Stability of the full system}
+By combining the three previous lemmas we present the following theorem on the stability of the full system.
+
+\begin{theorem}
+Let the fleet communication graph $\mathcal{G}$ be connected, and let $\lambda_{p,2}$, $\lambda_{d,2}$, $v_{2,\max}$, $\beta_0$, and $\varepsilon$ be positive constants and choose $\gamma_i$ so that  
+\begin{equation}
+    \gamma_i \geq \beta_0 + \bar{\mu}_p + \frac{v_{2,\max} \lambda_{p,2}}{\lambda_{d,2}}|\mathbf{v}_i - \mathbf{v}_{d,i}|.
+\end{equation}  
+    Furthermore, let the consensus gain $c_\xi$ be chosen so that $c_\xi \lambda_2 > 2 U_{LOS} k_\xi$, where $\lambda_2$ is the Fiedler eigenvalue of $\mathbf{L}$, and let $k_\xi$, $\Delta$, and $U_{LOS}$ be positive constants.
+    Then, for all initial conditions $[\mathbf{p}(0)\T ,\, \mathbf{v}(0)\T]\T \in \mathbb{R}^{6n}$ such that $\tilde{\mathbf{z}}_{t}(0) \in \Omega$, defined by \eqref{eq:Omega}, the trajectories of \eqref{eq:distributed_formation_error_system} and \eqref{eq:path_following_subsystem} remain ultimately bounded. Furthermore, when $\varepsilon\rightarrow0$ the origin of the system is asymptotically stable.
+\end{theorem}

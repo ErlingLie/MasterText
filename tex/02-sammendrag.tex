@@ -1,0 +1,16 @@
+%!TEX root = ../Thesis.tex
+\chapter*{\norwegianabstractname}
+\addcontentsline{toc}{chapter}{\norwegianabstractname}
+%
+Denne oppgaven presenterer en ny styringsmetode for formasjonsbanefølging med autonome undervannsfartøy ved hjelp av en andreordens nullromsbasert atferdsmetode. Autonome undervannsfartøy byr på unike utfordringer innen formasjonsbanefølging på grunn av deres ulineære og underaktuerte natur. Målet med oppgaven er å utnytte inngang-utgang-linearisering ved hjelp av håndposisjonskonseptet for å muliggjøre anvendelse av formasjonsstyringsmetoder som er utviklet for dobbelt-integrator-systemer, som ellers ikke ville vært anvendelige for autonome undervannsfartøy.
+
+Det viktigste bidraget i dette arbeidet er utvidelsen av den nullromsbaserte metoden til å direkte håndtere den iboende andreordens dynamikken til undervannsfartøy gjennom det inngang-utgang lineariserte dobbelt-integrator systemet. Ved å ta hensyn til all dynamikken i oppgaverommet, eliminerer metoden tilstedeværelsen av skjulte dynamikker fra lavnivåkontroll, som man støter på i førsteordens metoder. Styringsmetoden bruker håndposisjonskonseptet for å tranformere den underaktuerte seks-graders-frihet fartøymodellen til et dobbelt-integrator-system. Den nullromsbaserte atferdsmetoden muliggjør opprettelsen av et hierarki av prioriterte oppgaver. For å løse formasjonsbanefølgingsproblemet definerer vi tre oppgaver: kollisjonsungåelse, formasjonsvedlikehold og banefølging. Den andreordens formuleringen av den nullromsbaserte atferdsmetoden muliggjør å uttrykke all dynamikken til systemet direkte i oppgaverommet. 
+
+Først utvikles en sentralisert metode som likner mye på de førsteordens nullromsbaserte metodene som allerede finnes i litteraturen. Deretter, på grunn av praktiske begrensninger i virkelige anvendelser, presenterer vi en ny distribuert versjon av metoden. Denne distribuerte metoden omformulerer formasjonsvedlikeholdsoppgaven som et konsensusproblem, og muliggjør ulike kommunikasjonstopologier uten krav om at hvert fartøy må kommunisere med alle andre. Styringsloven utnytter teknikker fra "sliding mode" regulatorer for å eliminere feil grunnet ukomplett kommunikasjons graf.
+
+Lukket-sløyfe-systemet for formasjonsvedlikehold og banefølging analyseres ved hjelp av Lyapunov-teori. Vi viser at den sentraliserte metoden gir et uniformt semi-globalt asymptotisk stabilt system, mens løsningene til systemet under den desentraliserte metoden er til slutt avgrenset til et vilkårlig lite område avhengig av valg av approksimasjon av det diskontinuerlige leddet i "sliding mode" regulatoren. Med en ideell diskontinuerlig regulator er systemet asymptotisk stabilt.
+
+
+Metodens effektivitet demonstreres gjennom omfattende simuleringsstudier i MATLAB. Både den sentraliserte og distribuerte metoden testes under ulike scenarioer, og den distribuerte metoden sammenliknes med eksisterende metoder fra litteraturen. Det demonstreres at den andreordens nullromsbaserte atferdsmetoden har lavere feil i likevekt sammenliknet med andre metoder. Resultatene viser potensialet til den andreordens nullromsbaserte metoden for å oppnå nøyaktig formasjonsbanefølging for autonome undervannsfartøy.
+%
+\clearpage

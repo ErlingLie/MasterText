@@ -1,0 +1,471 @@
+\chapter{The Centralized NSB Method}\label{cha:nsb_tasks}
+This chapter introduces the tasks considered in our implementation of the \gls{nsb} algorithm for multi-vehicle formation control. These tasks represent the main objectives that the vehicles in the fleet must achieve to operate safely and efficiently. The tasks are similar to those presented by \cite{matous_singularity-free_2022}, but we modify them to work with \gls{soclik} methods in double-integrator systems instead of \gls{clik} methods in single-integrator systems. Most of the results from this chapter have been submitted to the 62nd IEEE Conference on Decision and Control \citep{lie_formation_2023}.\looseness=-1
+
+Three tasks are considered in decreasing order of priority: inter-vehicle collision avoidance, formation keeping, and path following. Inter-vehicle collision avoidance ensures that the fleet avoids dangerous collisions, which can result in severe damage to the involved vehicles and nearby property. The second task, formation keeping, is essential for maintaining a cohesive and stable fleet that can move as a single entity and achieve common goals. Path following requires the vehicles to track a desired trajectory while mitigating disturbances and external effects such as wind and currents, which is important for tasks such as search and rescue missions or environmental monitoring where the vehicles need to follow a pre-determined path. By incorporating all three tasks into the \gls{nsb} algorithm, we can ensure that the fleet behaves in a coordinated and efficient manner while meeting its mission requirements.
+
+The fleet consists of $n$ \glspl{auv} following the assumptions and vehicle model from Chapter~\ref{cha:vehicle_model}. Each vehicle is equipped with an input-output linearizing hand-position controller as described in Chapter~\ref{cha:hand_position}, yielding double-integrator position dynamics. This chapter considers the notation and definitions for formation path following from Chapter~\ref{cha:formation_path_following} and the external dynamics of each vehicle in the fleet follow the model:
+\begin{equation}\label{eq:feedback_linearized_dynamics}
+\begin{aligned}
+    \dot{\mathbf{p}}_i &= \mathbf{v}_i + \mathbf{v}_c,\\
+    \dot{\mathbf{v}}_i &= \bm{\mu}_i.
+\end{aligned}
+\end{equation}
+
+
+The chapter is organized as follows. Section~\ref{sec:combined_NSB} introduces the high-level combination of the three tasks, specifying the particular solution to the general \gls{nsb} controller \eqref{eq:NSB_second_order_general} for this problem. Sections~\ref{sec:inter_vehicle}, \ref{sec:formation_keeping}, and \ref{sec:path_following} introduce each of the three tasks in the \gls{nsb} hierarchy. Section~\ref{sec:ocean_current} introduces two different methods for estimating and compensating for the unknown ocean current, and Section~\ref{sec:obstacle_avoidance} describes two methods for modifying the \gls{nsb} method to include external obstacle avoidance.
+
+\section{Combined NSB controller}\label{sec:combined_NSB}
+The three tasks inter-vehicle collision avoidance, formation keeping, and path following are combined using the \gls{nsb} algorithm for second-order systems \eqref{eq:NSB_second_order_general}. We let the commanded acceleration from each task be given by $\dot{\mathbf{v}}_1$, $\dot{\mathbf{v}}_2$ and $\dot{\mathbf{v}}_3$ in order. These accelerations are generally given by \gls{soclik} \eqref{eq:SOCLIK} solutions and are defined in later sections. Note that $\dot{\mathbf{v}}_j$ is a stacked vector of accelerations for the whole fleet, and the commanded acceleration for a single vehicle will be denoted by double subscripts: $\dot{\mathbf{v}}_{j,i}$. The combined commanded acceleration is given by
+\begin{equation}\label{eq:combined_acceleration}
+    \dot{\mathbf{v}}_{NSB} = \dot{\mathbf{v}}_1 + \mathbf{N}_1 \dot{\mathbf{v}}_2 + \bar{\mathbf{N}}_2 \dot{\mathbf{v}}_3,
+\end{equation}
+where we recall that $\mathbf{N}_1 = (\mathbf{I} - \mathbf{J}_1^\dagger \mathbf{J}_1)$ is the null-space projector of task 1 and $\bar{\mathbf{N}}_2 = (\mathbf{I} - {[\mathbf{J}_1\T \, \mathbf{J}_2\T]\T}^\dagger [\mathbf{J}_1\T \, \mathbf{J}_2\T]\T)$ is the null-space projector of the space spanned by the Jacobians the first and second tasks. In this particular setup, the third task is orthogonal to the first two tasks since they deal with the relative motion within the fleet, while the last task addresses the collective motion of the entire fleet. Consequently, the combined commanded acceleration \eqref{eq:combined_acceleration} can be simplified, and the stacked resulting control action $\bm{\mu}$ is given by
+\begin{equation}\label{eq:combined_control_action}
+    \bm{\mu} = \dot{\mathbf{v}}_{NSB} = \dot{\mathbf{v}}_1 + \mathbf{N}_1 \dot{\mathbf{v}}_2 + \dot{\mathbf{v}}_3.
+\end{equation}
+
+We note that the equations of motion for the barycenter $\mathbf{p}_b$ defined by \eqref{eq:barycenter} is dependent only on the third task acceleration because the within-fleet accelerations from the first two tasks cancel out when summing over the fleet. Differentiation \eqref{eq:barycenter} with respect to time, we get
+\begin{subequations}\label{eq:barycenter_EOM}
+    \begin{align}
+        \dot{\mathbf{p}}_b &=  \frac{1}{n} \sum_{i=1}^n \dot{\mathbf{p}}_i = \frac{1}{n} \sum_{i=1}^n \mathbf{v}_i + \mathbf{v}_c \triangleq \mathbf{v}_b + \mathbf{v}_c,\\
+        \ddot{\mathbf{p}}_b &= \dot{\mathbf{v}}_b = \frac{1}{n}\sum_{i=1}^n \bm{\mu}_i= \frac{1}{n}\sum_{i=1}^n\dot{\mathbf{v}}_{3,i} \triangleq \bm{\mu}_b.
+    \end{align}
+\end{subequations}
+
+\section{Inter-vehicle collision avoidance task}\label{sec:inter_vehicle}
+The highest-priority task is the inter-vehicle \gls{colav} task. The task ensures that the minimum distance between two vehicles in the fleet remains larger than a predefined threshold $d_{COLAV}$, eliminating the chance of collisions. 
+
+The task is defined by its task variable $\bm{\sigma}_1 = [\sigma_{1,1}\T, \ldots, \sigma_{1,l}\T]\T$, which is a stacked vector of relative distances between vehicles closer than the threshold $d_{COLAV}$:
+\begin{equation}
+    \sigma_{1,k} = \|\mathbf{p}_i - \mathbf{p}_j\|, \quad \forall i,j \in {1, \ldots, n}: j > i,
+    \|\mathbf{p}_i - \mathbf{p}_j\| < d_{COLAV}.
+\end{equation}
+
+The task size varies depending on the number of vehicles within the activation distance. It is empty when all vehicles are further than $d_{COLAV}$ apart from each other. The desired values of the task are given by
+\begin{equation}
+    \bm{\sigma}_{d,1} = d_{COLAV} \mathbf{1}_l,
+\end{equation}
+and we note that $\ddot{\bm{\sigma}}_{d,1} = \dot{\bm{\sigma}}_{d,1}= 0$. Because the task only activates when the distance is below the threshold, the distance may temporarily violate the threshold due to the system's response time before a safe distance is recovered. Therefore, the threshold should be chosen larger than the minimum safe distance by a small margin.
+
+The stacked partial derivatives for each active collision make up the task Jacobian, which can be expressed as
+\begin{subequations}
+\begin{gather}
+    \mathbf{J}_1 = \left[\left(\frac{\partial \sigma_{1,1}}{\partial \mathbf{p}}\right)\T, \ldots, \left(\frac{\partial \sigma_{1,l}}{\partial \mathbf{p}}\right)\T\right]\T,\\
+    \frac{\partial \sigma_{1,k}}{\partial \mathbf{p}_i} =\frac{\left(\mathbf{p}_i-\mathbf{p}_j\right) \T}{\|\mathbf{p}_i - \mathbf{p}_j\|}, \; \frac{\partial \sigma_{1,k}}{\partial \mathbf{p}_j} = -\frac{\left(\mathbf{p}_i-\mathbf{p}_j\right) \T}{\|\mathbf{p}_i - \mathbf{p}_j\|}.
+\end{gather}
+\end{subequations}
+The partial derivative of each task variable with respect to vehicles that are not involved in the collision is zero. The derivative of the task Jacobian is similarly given by a stack of time-differentiated partial derivatives
+\begin{subequations}
+\begin{gather}
+    \dot{\mathbf{J}}_1 = \left[{\left(\frac{{\rm d}}{{\rm d}t}\frac{\partial \sigma_{1,1}}{\partial \mathbf{p}}\right)}\T, \ldots, {\left(\frac{{\rm d}}{{\rm d}t}\frac{\partial \sigma_{1,l}}{\partial \mathbf{p}}\right)}\T\right]\T,\\
+    {\frac{{\rm d}}{{\rm d}t}\frac{\partial \sigma_{1,k}}{\partial \mathbf{p}_i}}= \bigg(\frac{\mathbb{I}_3}{\|\mathbf{p}_i - \mathbf{p}_j\|} - \frac{\bigl(\mathbf{p}_i-\mathbf{p}_j\bigr)\bigl(\mathbf{p}_i-\mathbf{p}_j\bigr)\T}{\|\mathbf{p}_i - \mathbf{p}_j\|^3}\bigg)\bigl(\mathbf{v}_i-\mathbf{v}_j\bigr),\\
+    {\frac{{\rm d}}{{\rm d}t}\frac{\partial \sigma_{1,k}}{\partial \mathbf{p}_j}}= -\bigg(\frac{\mathbb{I}_3}{\|\mathbf{p}_i - \mathbf{p}_j\|} - \frac{\bigl(\mathbf{p}_i-\mathbf{p}_j\bigr)\bigl(\mathbf{p}_i-\mathbf{p}_j\bigr)\T}{\|\mathbf{p}_i - \mathbf{p}_j\|^3}\bigg)\bigl(\mathbf{v}_i-\mathbf{v}_j\bigr).
+\end{gather}
+\end{subequations}
+
+The resulting \gls{soclik} equation for the task is
+\begin{equation}
+    \dot{\mathbf{v}}_1 = -\mathbf{J}_1^\dagger \bigl( \mathbf{\Lambda}_{p,1}\Tilde{\bm{\sigma}}_1 + \mathbf{\Lambda}_{d,1} \dot{\bm{\sigma}}_1 + \dot{\mathbf{J}}_1 (\mathbf{v}+\mathbf{V}_c)\bigl),
+\end{equation}
+with $\dot{\bm{\sigma}}_{1} = \mathbf{J}_1 (\mathbf{v} + \mathbf{V}_c)$. Note that because $ \partial \sigma_{1,k}/\partial \mathbf{p}_i = - \partial \sigma_{1,k}/\partial \mathbf{p}_j$, it follows that $\mathbf{J}_1 \mathbf{V}_{c} = \dot{\mathbf{J}}_1 \mathbf{V}_{c} = \mathbf{0}$. Consequently, $\dot{\mathbf{v}}_1$ is independent of the ocean current velocity and given by
+\begin{equation}\label{eq:SOCLIK1}
+    \dot{\mathbf{v}}_1 = -\mathbf{J}_1^\dagger \bigl( \mathbf{\Lambda}_{p,1}\Tilde{\bm{\sigma}}_1 + \mathbf{\Lambda}_{d,1} \dot{\bm{\sigma}}_1 + \dot{\mathbf{J}}_1 \mathbf{v}\bigl),
+\end{equation}
+with $\dot{\bm{\sigma}}_{1} = \mathbf{J}_1 \mathbf{v}$.
+
+
+\section{Formation-keeping task}\label{sec:formation_keeping}
+The formation-keeping task is designed to move the vehicles into a predefined geometric configuration in the formation-centered frame. The task ensures initial convergence to the desired formation.  After convergence, the vehicle velocities are adjusted to account for the curvature of the path. The velocities of vehicles in the outer turns are increased, while those in the inner turns are decreased, to ensure that the formation remains orthogonal to the path-tangential coordinate frame.
+
+The task variable is given by the stacked vector of barycenter relative positions:
+\begin{equation}\label{eq:formation_keeping_task_variable}
+    \bm{\sigma}_2 = \left[ \bm{\sigma}_{2,1}\T, ..., \bm{\sigma}_{2,n-1}\T\right]\T, \quad \bm{\sigma}_{2,i}  = \mathbf{p}_i - \mathbf{p}_b,
+\end{equation}
+and the desired values are given by the predefined formation vectors, rotated from the formation frame to the inertial frame:
+\begin{equation}\label{eq:formation_keeping_desired_task_variable}
+    \bm{\sigma}_{d,2} = [\bigl(\mathbf{R}_p \mathbf{p}_{f,1}^f\bigr)\T, ..., \bigl(\mathbf{R}_p \mathbf{p}_{f,n-1}^f\bigr) \T] \T.
+\end{equation}
+The desired positions in the formation-centered frame are constant, but the rotation matrix is time-varying, so the desired first and second derivatives of the task variable are given by
+\begin{align}
+    \dot{\bm{\sigma}}_{d,2} &= [\bigl(\dot{\mathbf{R}}_p \mathbf{p}_{f,1}^f\bigr)\T, ..., \bigl(\dot{\mathbf{R}}_p \mathbf{p}_{f,n-1}^f\bigr) \T] \T,\\
+    \ddot{\bm{\sigma}}_{d,2} &= [\bigl(\ddot{\mathbf{R}}_p \mathbf{p}_{f,1}^f\bigr)\T, ..., \bigl(\ddot{\mathbf{R}}_p \mathbf{p}_{f,n-1}^f\bigr) \T] \T.
+\end{align}
+There is one fewer task than \glspl{auv} to avoid singularities, as the last \gls{auv}'s position is implied by the constraint $\sum_{i=1}^n \mathbf{p}_{f,i}^f = \mathbf{0}$, which comes as a result of the formation-keeping frame having the origin at the barycenter.
+
+The Jacobian is constant and given by
+\begin{equation}
+    \mathbf{J}_2 = \left(\begin{bmatrix}
+        \mathbb{I}_{n-1} & \mathbf{0}_{n-1, 1}
+    \end{bmatrix} - \frac{\mathbf{1}_{n-1, n}}{N}\right)\otimes \mathbb{I}_3.
+\end{equation}
+Because the Jacobian is constant, its derivative is zero. Then, the \gls{soclik} equation reduces to
+\begin{equation}\label{eq:formation_keeping_controller}
+    \dot{\mathbf{v}}_2 = \mathbf{J}_2^\dagger \bigl(\ddot{\bm{\sigma}}_{d,2} - \mathbf{\Lambda}_{p,2}\Tilde{\bm{\sigma}}_2 - \mathbf{\Lambda}_{d,2} \dot{\Tilde{\bm{\sigma}}}_2\bigl).
+\end{equation}
+Like the inter-vehicle collision avoidance task, this task is independent of the ocean current because $\mathbf{J}_2 \mathbf{V}_c = \mathbf{0}$.
+
+% \textcolor{DarkOrange}{
+% Interestingly, the following relationship holds $\mathbf{J}^\dagger\mathbf{J} = \tfrac{1}{n}\mathbf{L}$, where $\mathbf{L}$ is the Laplacian matrix of the fully connected graph consisting of all agents as described in \eqref{eq:laplacian_matrix} (see Section~\ref{sec:consensus_method}). The task variables can be written as 
+% \begin{equation}
+%     \mathbf{\sigma}_2 = \mathbf{J}\mathbf{p}, \quad \dot{\mathbf{\sigma}}_2 = \mathbf{J}\mathbf{v}, \quad \ddot{\mathbf{\sigma}}_2 = \mathbf{J}\dot{\mathbf{v}}.
+% \end{equation}
+% Then, if the gain matrices are chosen as multiples of the identity matrix $\bm{\Lambda} = \lambda \mathbf{I}$, the \gls{soclik} equation \eqref{eq:formation_keeping_controller} can be rewritten as
+% \begin{equation}\label{eq:formation_keeping_consensus_form}
+%     \dot{\mathbf{v}}_2 = \mathbf{L}\dot{\mathbf{v}}_d - \lambda_{p,2}\mathbf{L}(\mathbf{p}-\mathbf{p}_d) - \lambda_{d,2}\mathbf{L}(\mathbf{v} - \mathbf{v}_d),
+% \end{equation}
+% where
+% \begin{equation}
+%     \mathbf{p}_{d,i} = \mathbf{p}_p + \mathbf{R}_p \mathbf{p}_{f,i}^f, \quad \mathbf{v}_{d,i} = \mathbf{v}_p + \dot{\mathbf{R}}_p \mathbf{p}_{f,i}^f, \quad \dot{\mathbf{v}}_{d,i} = \dot{\mathbf{v}}_p + \ddot{\mathbf{R}}_p \mathbf{p}_{f,i}^f.
+% \end{equation}
+% The rewritten \gls{soclik} equation \eqref{eq:formation_keeping_consensus_form} has clear similarities to the consensus algorithms from Section~\ref{sec:consensus_algorithms}.}
+
+The nominal task acceleration \eqref{eq:formation_keeping_controller} may become arbitrarily large depending on the formation-keeping error, which may saturate the actuators. When combined with the other tasks, the full \gls{nsb} controller may also lead to a loss of controllability if the formation-keeping velocities exactly cancel out the path-following velocities. Therefore, we introduce the saturated task acceleration
+\begin{equation}\label{eq:saturated_formation_keeping}
+\dot{\mathbf{v}}_2 = \mathbf{J}_2^\dagger \bigl(\ddot{\bm{\sigma}}_{d,2} - v_{2_{\max}}\mathrm{sat}\bigl(\mathbf{\Lambda}_{p,2}\Tilde{\bm{\sigma}}_2\bigr) - \mathbf{\Lambda}_{d,2} \dot{\Tilde{\bm{\sigma}}}_2\bigl),
+\end{equation}
+where $v_{2_{\max}}$ is a positive constant and $\mathrm{sat}$ is a saturation function given by
+\begin{equation}\label{eq:saturation_function}
+    \mathrm{sat}\bigl(\mathbf{x}\bigr) = \mathbf{x}\frac{\tanh{\|\mathbf{x}\|}}{\|\mathbf{x}\|}.
+\end{equation}
+With the saturated task acceleration, we further require that the product of the gain matrices $\mathbf{\Lambda}_{p,2} \mathbf{\Lambda}_{d,2}$ is symmetric positive definite. The reason for this requirement will become clear in the stability proof in Section~\ref{sec:closed_loop_formation_keeping}.
+
+The control action due to the task error is limited by the saturated task acceleration, reducing the chance of actuator saturation. Furthermore, the saturated task acceleration leads to a bounded task velocity which can be chosen sufficiently small so that it cannot exactly cancel out the path-following velocity, hence eliminating the problem of controllability loss.
+
+
+\section{Path-following task}\label{sec:path_following}
+The path-following task involves controlling the barycenter of the vehicle fleet to follow a given path. The task is designed to ensure that the vehicles remain on the desired trajectory while accounting for external disturbances such as ocean currents. The \glspl{auv} move in three dimensions and we apply the \textit{coupled} \gls{los} method from \cite{matous_singularity-free_2022}. Wheras \textit{decoupled} \gls{los} methods utilize two distinct guidance schemes to steer the vehicle separately in the horizontal and vertical planes \citep{caharija_path_2012}, \textit{coupled} \gls{los} methods employ a single guidance scheme to steer the vehicle simultaneously in all three dimensions \citep{breivik_principles_2005}. \gls{los} methods are generally defined at the first-order kinematic level, with velocity or orientation references as output. We differentiate the \gls{los} method and introduce feedback so that it can work directly with double-integrator systems. The method views the entire fleet as one entity and provides a common path-following acceleration to every vehicle in the fleet. An advantage of using a \gls{los} method for path following compared to a simpler alternative, like a PID controller in the path error, is that the \gls{los} method provides a constant-speed approach to the path, which ensures that the vehicles remain at controllable velocities and furthermore mitigates actuator saturation at large path errors.
+
+We let the path-following error be defined by the barycenter position in the path-tangential frame $\mathbf{p}_b^p$ and let its components be denoted by $x_b^p$, $y_b^p$ and $z_b^p$. Inspired by \cite{belleter_observer_2019}, the error-dependent look-ahead distance is given by
+\begin{equation}\label{eq:error-dependent-lookahead}
+    \Delta(\mathbf{p}_b^p) = \sqrt{\Delta_0^2 + (x_b^p)^2 + (y_b^p)^2 + (z_b^p)^2},
+\end{equation}
+where $\Delta_0$ is a positive constant. The \gls{los} velocity is given by
+\begin{equation}\label{eq:desired_LOS}
+    \mathbf{v}_{LOS, d} = \mathbf{R}_p \left[ \Delta(\mathbf{p}_b^p), -y_b^p, -z_b^p \right]\T\frac{U_{LOS}}{D},
+\end{equation}
+where $U_{LOS} > 0$ is the desired path-following speed, and
+\begin{equation}
+    D = \sqrt{\Delta(\cdot)^2 + (y_b^p)^2 + (z_b^p)^2}
+\end{equation}
+is a normalization term.
+
+Our method differs from that of \cite{matous_singularity-free_2022} in that we differentiate the desired \gls{los} velocity \eqref{eq:desired_LOS} once to derive the desired \gls{los} acceleration
+\begin{equation}\label{eq:desired_LOS_derivative}
+\begin{split}
+        \dot{\mathbf{v}}_{LOS,d} &= \dot{\mathbf{R}}_p\left[ \Delta(\mathbf{p}_b^p), -y_b^p, -z_b^p \right]\T \frac{U_{LOS}}{D} \\&+ \mathbf{R}_p \left[ \dot{\Delta}(\mathbf{p}_b^p, \dot{\mathbf{p}}_b^p), -\dot{y}_b^p, -\dot{z}_b^p \right]\T \frac{U_{LOS}}{D}\\ &- \mathbf{R}_p \left[ \Delta(\mathbf{p}_b^p), -y_b^p, -z_b^p \right]\T \frac{U_{LOS}}{D^2}\dot{D}.
+    \end{split}
+\end{equation}
+
+To mitigate drift from numerical integration, and because the initial velocity of the fleet can differ from the desired \gls{los} velocity, we let the task acceleration be given by the following linear relation
+\begin{equation} \label{eq:LOS_dynamics}
+    \dot{\mathbf{v}}_{LOS} = \dot{\mathbf{v}}_{LOS,d} + \mathbf{\Lambda}_{LOS} (\mathbf{v}_{LOS,d} - \mathbf{v}_b-\mathbf{v}_c),
+\end{equation}
+where $\mathbf{v}_b = \tfrac{1}{N} \sum_{i=1}^N \mathbf{v}_i$ is the barycenter velocity and $\mathbf{\Lambda}_{LOS}$ is a positive definite gain matrix. The same acceleration is applied to each vehicle, so the resulting task acceleration is given by a simple Kronecker product
+\begin{equation}
+    \dot{\mathbf{v}}_3 = \mathbf{1}_{n,1} \otimes \dot{\mathbf{v}}_{LOS}.\label{eq:path_following_task_acceleration}
+\end{equation}
+
+\begin{lemma}\label{lemma:LOS_controller_lemma}
+    Let $\mathbf{\Lambda}_{LOS}$ be a positive definite gain matrix. The ocean-current relative barycenter velocity $\mathbf{v}_b$ converges to the relative \gls{los} desired velocity $\mathbf{v}_{LOS,d} - \mathbf{v}_c$ under the controller defined by the three equations \eqref{eq:combined_control_action}, \eqref{eq:LOS_dynamics}, and \eqref{eq:path_following_task_acceleration}.
+\end{lemma}
+\begin{proof}
+    The closed-loop dynamics of the barycenter velocity $\mathbf{v}_b$ under the controller \eqref{eq:combined_control_action} are given by \eqref{eq:barycenter_EOM}. In \eqref{eq:path_following_task_acceleration}, $\dot{\mathbf{v}}_3$ is defined as a stack of $\dot{\mathbf{v}}_{LOS}$ repeated $n$ times. Consequently,
+    \begin{equation}
+        \bm{\mu}_b = \frac{1}{n}\sum_{i=1}^n \dot{\mathbf{v}}_{3,i} = \dot{\mathbf{v}}_{LOS}.
+    \end{equation}
+    Inserting for \eqref{eq:LOS_dynamics}, the closed-loop dynamics of the error $\Tilde{\mathbf{v}}_b = \mathbf{v}_b + \mathbf{v}_c - \mathbf{v}_{LOS,d}$ are given by
+    \begin{equation}
+        \dot{\Tilde{\mathbf{v}}}_b = -\mathbf{\Lambda}_{LOS} \Tilde{\mathbf{v}}_b,
+    \end{equation}
+    which is a linear system with a positive definite gain matrix. Then the system is exponentially stable.
+\end{proof}
+
+The proof only holds if we know the ocean current $\mathbf{v}_c$, which is generally unknown. Section~\ref{sec:ocean_current} will present approaches to overcome this shortcoming. 
+
+Like in \cite{matous_singularity-free_2022}, the update of the path-parameter $\xi$ is used as an extra degree of freedom to guarantee along-track stability:
+\begin{equation}\label{eq:path_update}
+    \dot{\xi} = U_{LOS}\left \| \frac{\partial \mathbf{p}_p(\xi)}{\partial \xi}\right \|^{-1} \left (\frac{\Delta(\mathbf{p}_b^p)}{D} +  k_\xi\frac{x_b^p}{\sqrt{1 + (x_b^p)^2}} \right ).
+\end{equation}
+This choice ensures that the desired \gls{los} velocity \eqref{eq:desired_LOS} guarantees USGES of the path-following task, which we will rely on in the stability proof presented in Section~\ref{sec:closed_loop_path_following}.
+
+
+\section{Compensating unknown ocean currents}\label{sec:ocean_current}
+The \gls{auv} is subject to unknown ocean currents. The ocean currents are assumed constant and irrotational, which is often a reasonable assumption because the ocean current dynamics are much slower than the \gls{auv} dynamics. These currents can significantly affect the \gls{auv}'s motion and make it difficult to achieve precise control and accurate navigation. To address this challenge, we propose two methods to estimate and compensate for the effect of ocean currents on \gls{auv} motion: integral action and ocean-current observer. Both methods require accurate measurement of the vehicle position. Because the ocean current is assumed to be equal for all vehicles, it is sufficient to compensate for it in the path-following task as it has no effect on the two tasks that concern the relative motion of vehicles within the fleet.
+
+\subsection{Integral action}\label{sec:integral_action}
+Integral action is a common method in control theory to compensate for constant disturbances. The error between the desired fleet trajectory and the actual trajectory is continuously measured and used to update the control inputs in a way that accounts for the cumulative effect of past errors. As will be shown, the integral-error state will grow until it exactly cancels out the ocean current resulting in the fleet following the desired absolute velocity.
+
+We recall the feedback-linearized model \eqref{eq:feedback_linearized_dynamics}:
+\begin{align*}
+    \dot{\mathbf{p}}_i &= \mathbf{v}_i + \mathbf{v}_c,\\
+    \dot{\mathbf{v}}_i &= \bm{\mu}_i.
+\end{align*}
+We introduce the virtual integral state $\mathbf{p}_v$ defined by
+\begin{equation}\label{eq:los_integral_state}
+    \dot{\mathbf{p}}_v = \mathbf{v}_{LOS,d},
+\end{equation}
+and define the new input $\dot{\mathbf{v}}_{LOS,I}$
+\begin{equation} \label{eq:LOS_integral_controller}
+    \dot{\mathbf{v}}_{LOS,I} = \dot{\mathbf{v}}_{LOS,d} + \mathbf{\Lambda}_{p,3} (\mathbf{v}_{LOS,d} - \mathbf{v}_b) + \mathbf{\Lambda}_{i,3} (\mathbf{p}_v-\mathbf{p}_b),
+\end{equation}
+which replaces the previosly defined path-following task acceleration $\dot{\mathbf{v}}_{LOS}$ given by \eqref{eq:LOS_dynamics}. The gain matrices $\mathbf{\Lambda}_{p,3}$ and $\mathbf{\Lambda}_{i,3}$ are positive definite.
+
+Let the error variables be given by
+\begin{subequations}\label{eq:LOS_integral_errors}
+ \begin{align}
+     \Tilde{\mathbf{p}}_b &= \mathbf{p}_b-\mathbf{p}_v - \bm{\Lambda}_{i,3}^{-1}\bm{\Lambda}_{p,3} \mathbf{v}_c,\\
+     \Tilde{\mathbf{v}}_b &= \mathbf{v}_b + \mathbf{v}_c - \mathbf{v}_{LOS,d}.
+ \end{align}
+\end{subequations}
+After applying the controller \eqref{eq:combined_control_action} with the path-following task-acceleration given by \eqref{eq:path_following_task_acceleration} and \eqref{eq:LOS_integral_controller} to the fleet system \eqref{eq:feedback_linearized_dynamics}, the barycenter equations of motion are given by \eqref{eq:barycenter_EOM} with control action $\bm{\mu}_b = \dot{\mathbf{v}}_{LOS,I}$. The resulting closed-loop error dynamics are
+\begin{equation}\label{eq:integral_closed_loop}
+    \begin{bmatrix}
+        \dot{\Tilde{\mathbf{p}}} \\ \dot{\Tilde{\mathbf{v}}}
+    \end{bmatrix} = \begin{bmatrix}
+        \mathbf{0} & \mathbb{I}\\
+        -\mathbf{\Lambda}_{i,3} & -\mathbf{\Lambda}_{p,3}
+    \end{bmatrix}\begin{bmatrix}
+        \Tilde{\mathbf{p}} \\ \Tilde{\mathbf{v}}
+    \end{bmatrix}.
+\end{equation}
+
+For symmetric positive definite gain matrices $\bm{\Lambda}_{p,3}$ and $\bm{\Lambda}_{i,3}$ the system matrix is Hurwitz and the origin $[\Tilde{\mathbf{p}}_b\T \; \Tilde{\mathbf{v}}_b\T]\T = \mathbf{0}$ is a \gls{ges} equillibrium.
+
+% \begin{lemma}\label{lemma:integral_LOS_lemma}
+%     Let $\bm{\Lambda}_{p,3}$ and $\bm{\Lambda}_{i,3}$ be two symmetric positive definite matrices. The origin $[\Tilde{\mathbf{p}}_b\T \; \Tilde{\mathbf{v}}_b\T]\T = \mathbf{0}$ is a uniformly globally exponentially stable (UGES) equilibrium of he error system \eqref{eq:integral_closed_loop}.
+% \end{lemma}
+% \begin{proof}
+% The system \eqref{eq:integral_closed_loop} is a linear system with a Hurwitz system matrix and is consequently uniformly globally exponentially stable.
+% \end{proof}
+
+The position does not converge to the virtual integral state, however, that is not a problem. As long as the absolute velocity converges to the \gls{los} velocity, the \gls{los} method should ensure convergence to the path.
+
+\subsection{Ocean current observer}\label{sec:ocean_current_observer}
+An alternative approach is to define an estimator of the ocean current $\mathbf{v}_c$ and insert it directly into equation \eqref{eq:LOS_dynamics}. An advantage of this approach is that we can
+compensate for the ocean current in all tasks of the \gls{nsb} algorithm if we were to define additional tasks that are dependent on the current.
+
+We extend the observer by \cite{aguiar_dynamic_2002} to three dimensions. Additionally, we modify it to work with the hand-position feedback-linearized dynamics where the velocity is described in the \gls{ned} coordinate frame. The observer gives estimates of the position $\hat{\mathbf{p}}$ and the ocean-current velocity $\hat{\mathbf{v}}_c$. We let the velocity and position of the observer be given by the barycenter of the fleet, and get the following observer
+\begin{subequations}\label{eq:ocean_current_observer}
+    \begin{align}
+        \dot{\hat{\mathbf{p}}}_b &= \mathbf{v}_b + \hat{\mathbf{v}}_c + \mathbf{K}_1 \Tilde{\mathbf{p}}_b,\\
+        \dot{\hat{\mathbf{v}}}_c &= \mathbf{K}_2 \Tilde{\mathbf{p}}_b,
+    \end{align}
+\end{subequations}
+where $\mathbf{K}_1$ and $\mathbf{K}_2$ are observer gains, $\Tilde{\mathbf{p}}_b = \mathbf{p}_b - \hat{\mathbf{p}}_b$ is the estimation error of the position, and we let $\Tilde{\mathbf{v}}_c = \mathbf{v}_c-\hat{\mathbf{v}}_c$ be the estimation error of the ocean-current velocity. 
+
+Inserting for the observer \eqref{eq:ocean_current_observer} and the barycenter system equations \eqref{eq:barycenter_EOM}, the estimation-error dynamics are given by
+\begin{equation}
+    \begin{bmatrix}
+        \dot{\Tilde{\mathbf{p}}}_b\\
+        \dot{\Tilde{\mathbf{v}}}_c
+    \end{bmatrix} = \begin{bmatrix}
+        -\mathbf{K}_1 & \mathbb{I}\\-\mathbf{K}_2 & \mathbf{0}
+    \end{bmatrix}\begin{bmatrix}
+        \Tilde{\mathbf{p}}_b\\
+        \Tilde{\mathbf{v}}_c
+    \end{bmatrix},
+\end{equation} 
+which is a \gls{ges} linear system if the gain matrices $\mathbf{K}_1$ and $\mathbf{K}_2$ are chosen positive definite.
+
+% \begin{lemma}\label{lemma:ocean_current_observer}
+%     Let $\mathbf{K}_1$ and $\mathbf{K}_2$ be positive definite observer gains. The origin $[\Tilde{\mathbf{p}}_b\T \; \Tilde{\mathbf{v}}_c\T]\T$ is a uniformly globally exponentially stable (UGES) equilibrium of the error system given by the observer \eqref{eq:ocean_current_observer} applied to the barycenter system \eqref{eq:barycenter_EOM}.
+% \end{lemma}
+
+% \begin{proof}
+%     The estimation-error dynamics are given by
+% \begin{equation}
+%     \begin{bmatrix}
+%         \dot{\Tilde{\mathbf{p}}}_b\\
+%         \dot{\Tilde{\mathbf{v}}}_c
+%     \end{bmatrix} = \begin{bmatrix}
+%         -\mathbf{K}_1 & \mathbb{I}\\-\mathbf{K}_2 & \mathbf{0}
+%     \end{bmatrix}\begin{bmatrix}
+%         \Tilde{\mathbf{p}}_b\\
+%         \Tilde{\mathbf{v}}_c
+%     \end{bmatrix},
+% \end{equation} 
+%     which is an exponentially stable linear system.
+% \end{proof}
+
+                             
+
+To apply the observer, we insert the estimate $\hat{\mathbf{v}}_c$ for the ocean current $\mathbf{v}_c$ in \eqref{eq:LOS_dynamics}:
+\begin{equation} \label{eq:LOS_dynamics_observer}
+    \dot{\mathbf{v}}_{LOS} = \dot{\mathbf{v}}_{LOS,d} + \mathbf{\Lambda}_{LOS} (\mathbf{v}_{LOS,d} - \mathbf{v}_b-\hat{\mathbf{v}}_c).
+\end{equation}
+The full closed-loop error system consists of the control error $\Tilde{\mathbf{v}}_b = \mathbf{v}_b + \mathbf{v}_c - \mathbf{v}_{LOS,d}$ and the observer errors $\Tilde{\mathbf{p}}_b\T$ and $\Tilde{\mathbf{v}}_c$. First, the path-following task acceleration \eqref{eq:path_following_task_acceleration} with \eqref{eq:LOS_dynamics_observer} is applied to barycenter system \eqref{eq:barycenter_EOM},  which yields
+\begin{equation}
+        \dot{\Tilde{\mathbf{v}}}_b = -\mathbf{\Lambda}_{LOS}\Tilde{\mathbf{v}}_b + \mathbf{\Lambda}_{LOS} \Tilde{\mathbf{v}}_c.
+\end{equation}
+Letting the ocean-current estimate $\hat{\mathbf{v}}_c$ be given by \eqref{eq:ocean_current_observer}. The full system follows:
+\begin{equation}\label{eq:controller_observer_closed_loop}
+    \begin{bmatrix}
+         \dot{\Tilde{\mathbf{v}}}_b\\
+        \dot{\Tilde{\mathbf{p}}}_b\\
+        \dot{\Tilde{\mathbf{v}}}_c
+    \end{bmatrix} = \begin{bmatrix}
+        -\mathbf{\Lambda}_{LOS} & \mathbf{0} & \mathbf{\Lambda}_{LOS}\\
+        \mathbf{0} & -\mathbf{K}_1 & \mathbb{I}\\
+        \mathbf{0} & -\mathbf{K}_2 & \mathbf{0}
+    \end{bmatrix}\begin{bmatrix}
+        \Tilde{\mathbf{v}}_b\\
+        \Tilde{\mathbf{p}}_b\\
+        \Tilde{\mathbf{v}}_c
+    \end{bmatrix},
+\end{equation}
+
+\begin{lemma}\label{lemma:controller_observer_closed_loop}
+    Let $\bm{\Lambda}_{LOS}$, $\mathbf{K}_1$ and $\mathbf{K}_2$ be positive definite matrices. Then, the origin $[\Tilde{\mathbf{v}}_b\T\;  \Tilde{\mathbf{p}}_b\T\;        \Tilde{\mathbf{v}}_c\T]\T = \mathbf{0}$ is a uniformly globally exponentially stable (UGES) equilibrium of the closed-loop error system \eqref{eq:controller_observer_closed_loop}.
+\end{lemma}
+
+\begin{proof}
+    The proof follows from the separation principle. 
+    
+    The full closed-loop system \eqref{eq:controller_observer_closed_loop} is block-triangular with blocks
+\begin{equation*}
+    -\mathbf{\Lambda}_{LOS} \quad \mathrm{and} \quad \begin{bmatrix}
+        -\mathbf{K}_1 & \mathbb{I}\\-\mathbf{K}_2 & \mathbf{0}
+    \end{bmatrix}.
+\end{equation*}
+The union of the eigenvalues of the controller given by the three equations \eqref{eq:combined_control_action}, \eqref{eq:path_following_task_acceleration}, and \eqref{eq:LOS_dynamics} and the observer \eqref{eq:ocean_current_observer} gives the eigenvalues of the full error system. Hence, the full system is stable because the controller and the observer are separately stable under the positive definite gain matrix assumptions.
+\end{proof}
+
+
+\section{Obstacle avoidance}\label{sec:obstacle_avoidance}
+We propose two different methods for obstacle avoidance. The first method is directly adapted from \cite{matous_singularity-free_2022} and involves using a planar collision cones method at the path-following stage of the \gls{nsb} method. An advantage of this method is that the fleet keeps its formation throughout the avoidance maneuver and the method works well with moving obstacles. A possible disadvantage is that the method only works in the horizontal ($xy$)-plane, and may lead to excessive avoidance maneuvers in cases where the obstacles could be easier avoided in the $z$-direction.
+
+The second method is directly adapted from \cite{arrichiello_formation_2006}. It involves merging the inter-vehicle collision task from Section~\ref{sec:inter_vehicle} and obstacle avoidance into one task. In this approach, the joint inter-vehicle and external obstacle collision avoidance tasks are now treated as distributed individual tasks for each vehicle instead of one centralized task.  Some advantages are that obstacle avoidance now is the highest priority task, the formulation inherently allows for multiple obstacles and obstacle avoidance can now be conducted in all three directions rather than only the plane. 
+
+The second approach prioritizes obstacle avoidance over formation keeping, allowing the fleet to split up in order to avoid obstacles. While this approach may increase the safety of the fleet, it comes with both advantages and disadvantages. On the one hand, only the vehicle in danger of collision needs to make an avoidance maneuver, enabling a quicker return to the desired path, as each individual vehicle can avoid the obstacle with a smaller margin than the fleet would need if it were to avoid the obstacle in formation. On the other hand, splitting up the formation during an obstacle avoidance maneuver may lead to vehicles being out of communication range from each other, making it difficult to return to formation.
+
+Both approaches have advantages and disadvantages, and different behaviors when encountering obstacles. The choice of collision avoidance method will depend on the application and desired behavior.
+
+\subsection{Collision cones}\label{sec:collision_cones}
+The first obstacle avoidance method is based on the collision cones concept and enables the fleet to avoid external obstacles while keeping the formation. The approach mitigates the issue of vehicles straying out of communication range during avoidance maneuvers. We modify the collision cones method from \cite{matous_singularity-free_2022} to be compatible with double integrator dynamics and focus on obstacle avoidance in the $xy$-plane.
+
+
+We assume a constant velocity model for the obstacle. Its position and velocity vectors are denoted by $\mathbf{p}_o = [x_o, y_o, z_o]\T$ and $\mathbf{v}_o = [\dot{x}_o, \dot{y}_o, \dot{z}_o]\T$. We define an obstacle avoidance radius $r_o$ that is large enough to account for both the size of the obstacle and the \gls{auv}. In addition, we define the formation radius $r_f$ as the maximum distance between any vehicle in the fleet and the formation center, and it is assumed to be constant. We further define $\mathbf{p}_{rel} = [x_b-x_o, y_b-y_o]\T$, $\mathbf{v}_{rel} = [\dot{x}_{LOS,d}-\dot{x}_o, \dot{y}_{LOS,d} - \dot{y}_o ]\T$, and $\dot{\mathbf{v}}_{rel} = \left[ \ddot{x}_{LOS,d},  \ddot{y}_{LOS,d}\right]\T$. Note that $\mathbf{v}_{rel}$ is defined in terms of the \gls{los} desired velocity \eqref{eq:desired_LOS}, so $\dot{\mathbf{p}}_{rel} \neq \mathbf{v}_{rel}$.
+
+\begin{figure}[t]
+    \centering
+    \begin{subfigure}[t]{0.45\textwidth}
+        \centering
+        \def\svgwidth{.8\textwidth}
+        \import{figures/illustrations}{obstacle_avoidance (1).pdf_tex}
+        \vspace{-1.15em}
+        \caption{Illustration of the obstacle avoidance constraint~\eqref{eq:obstacle_avoidance_condition}.}
+        \label{fig:obstacle_radius}
+    \end{subfigure}   
+    \begin{subfigure}[t]{0.45\textwidth}
+        \centering
+        \def\svgwidth{.8\textwidth}
+        \import{figures/illustrations}{collision_cone.pdf_tex}
+        \vspace{-1.15em}
+        \caption{Illustration of the conflict condition~\eqref{eq:collision-conflict}.}
+        \label{fig:collision_cone}
+    \end{subfigure} 
+    \caption{Illustrations of obstacle avoidance. From \cite{lie_formation_2023}, adapted from \cite{matous_singularity-free_2022}. }     
+\end{figure}
+
+Collision is avoided if we ensure
+\begin{equation}
+    ||\mathbf{p}_{rel}|| \geq r_o + r_f
+    \label{eq:obstacle_avoidance_condition}
+\end{equation}
+throughout the avoidance maneuver (see Fig.~\ref{fig:obstacle_radius}). The formation is on a collision course (see Fig.~\ref{fig:collision_cone}), if
+\begin{equation}
+    |\angle (-\mathbf{p}_{rel}, \mathbf{v}_{rel})| \leq \alpha ,\quad \alpha = \arcsin\bigl(\frac{r_o+r_f}{||\mathbf{p}_{rel}||}\bigr).
+    \label{eq:collision-conflict}
+\end{equation}
+From \eqref{eq:collision-conflict}, we see that for a given formation radius, the cone angle $\alpha$ increases as the distance decreases. The obstacle avoidance task is activated if the fleet is close enough so that $\alpha > \alpha_{\min}$. When the task is active, the $x$- and $y$-components of  $\mathbf{v}_{LOS,d}$ and $\dot{\mathbf{v}}_{LOS,d}$  given by \eqref{eq:desired_LOS} and \eqref{eq:desired_LOS_derivative} are replaced with $\mathbf{v}_{OA,d}$ and $\dot{\mathbf{v}}_{OA,d}$, given by
+\begin{align}
+    \mathbf{v}_{OA,d} &= ||\mathbf{v}_{rel}|| \left[\cos{(\psi_{OA})}, \sin{(\psi_{OA})}\right]\T \!+\! \left[\dot{x}_o, \dot{y}_o \right]\T,\label{eq:v_OA}\\
+    \begin{split}\label{eq:v_OA_dot}
+    \dot{\mathbf{v}}_{OA,d} &= \dot{||\mathbf{v}_{rel}||}\left[ \cos{(\psi_{OA})}, \sin{(\psi_{OA})}\right]\T \\&+ \!||\mathbf{v}_{rel}||\!\left[ -\sin{(\psi_{OA})}\dot{\psi}_{OA}, \cos{(\psi_{OA})} \dot{\psi}_{OA}\right]\!\T\!,
+    \end{split}
+\end{align}
+where
+\begin{align}
+    \psi_{OA} &= \mathrm{atan}_2 \left(y_o-y_b, x_o-x_b\right) \pm \alpha,\\
+    %\dot{\psi}_{OA} &= \frac{(x_o-x_b)(\dot{y}_o-\dot{y}_b) - (y_o-y_b)(\dot{x}_o-\dot{x}_b)}{||\mathbf{p}_{rel}||^2} \pm \dot{\alpha}\\
+    \dot{\psi}_{OA} &= \frac{\mathrm{det}\bigl([\mathbf{p}_{rel}\; \dot{\mathbf{p}}_{rel}]\bigr)}{||\mathbf{p}_{rel}||^2} \pm \dot{\alpha},\\
+    \dot{\alpha} &= \frac{r_o+r_f}{||\mathbf{p}_{rel}||^2\sqrt{||\mathbf{p}_{rel}||^2-(r_o+r_f)^2}}\mathbf{p}_{rel}\T \dot{\mathbf{p}}_{rel},
+\end{align}
+ before entering into \eqref{eq:LOS_dynamics} or \eqref{eq:los_integral_state} and \eqref{eq:LOS_integral_controller}.
+
+\subsection{Individual vehicle collision avoidance}\label{sec:individual_colav}
+Our second obstacle avoidance approach is adapted from \cite{arrichiello_formation_2006}, but tailored to work with double-integrator dynamics. Instead of a centralized approach, the method builds the avoidance task individually for each vehicle, treating the other vehicles in the fleet as external obstacles. The task variables are similar to those defined in Section~\ref{sec:inter_vehicle} but
+the controlled position $\mathbf{p}_i$ and velocity $\mathbf{v}_i$ are now those of one individual vehicle and not the entire fleet. 
+
+Let the set of obstacles $\mathcal{O}$ include all vehicles in the fleet and any external obstacles. Let the task variable be given by $\sigma_{1,v,i}$, where the first subscript denotes that it is the first task, the second subscript denotes the controlled vehicle, and the third subscript is the obstacle index. The task and task Jacobians are given by
+\begin{subequations}
+\begin{align}
+    \sigma_{1,v, i} &= \| \mathbf{p}_v - \mathbf{p}_i\|, \quad \forall i \in \mathcal{O} : \|\mathbf{p}_v - \mathbf{p}_i \| < d_{COLAV},\\
+    \sigma_{1,v,i,d} &= d_{COLAV},\\
+    \mathbf{J}_{1,v,i} &= \hat{\mathbf{r}}_{v,i}\T,\\
+    \dot{\mathbf{J}}_{1,v,i} &= \dot{\hat{\mathbf{r}}}_{v,i}\T,   
+\end{align}
+\end{subequations}
+where
+\begin{subequations}
+\begin{align}
+    \hat{\mathbf{r}}_{v,i} &= \frac{\mathbf{p}_v-\mathbf{p}_i}{\|\mathbf{p}_v-\mathbf{p}_i\|},\\
+    \dot{\hat{\mathbf{r}}}_{v,i} &=\frac{1}{\|\mathbf{p}_v-\mathbf{p}_i\|}\left(\mathbb{I}_3 - \hat{\mathbf{r}}_{v,i}\hat{\mathbf{r}}_{v,i}\T\right) \left(\mathbf{v}_v + \mathbf{v}_c - \dot{\mathbf{p}}_i\right).
+\end{align}
+\end{subequations}
+The obstacle absolute velocity is denoted by $\dot{\mathbf{p}}_i$, to not confuse it with the ocean-current relative velocity $\mathbf{v}_i$. We note that the pseudo-inverse of the Jacobian is given by $\mathbf{J}_{1,v,i}^\dagger = \mathbf{J}_{1,v,i}\T = \hat{\mathbf{r}}_{v,i}$.
+
+
+We now observe that the second derivative of the task variable is given by
+\begin{equation}
+    \ddot{\sigma}_{1,v,i} = [\mathbf{J}_{1,v,i} \; -\mathbf{J}_{1,v,i}]\begin{bmatrix}
+        \dot{\mathbf{v}}_v\\
+        \dot{\mathbf{v}}_i
+    \end{bmatrix}  + [\dot{\mathbf{J}}_{1,v,i} \; -\dot{\mathbf{J}}_{1,v,i}] \begin{bmatrix}
+        \mathbf{v}_v + \mathbf{v}_c\\
+        \dot{\mathbf{p}}_i
+    \end{bmatrix},
+\end{equation}
+which, given a desired second derivative of the task error $\ddot{\tilde{\sigma}}^*_{1,v,i}$, can be rearranged to find desired avoidance accelerations for each vehicle involved in the collision\enlargethispage*{\baselineskip}
+\begin{equation}
+    \begin{bmatrix}
+        \dot{\mathbf{v}}_{1,v,i}\\
+        \dot{\mathbf{v}}_{1,i,v}
+    \end{bmatrix} = \frac{1}{2}\begin{bmatrix}
+        \mathbf{J}_{1,v,i}^\dagger\\
+        -\mathbf{J}_{1,v,i}^\dagger
+    \end{bmatrix}\left(\ddot{\tilde{\sigma}}^*_{1,v,i} - [\dot{\mathbf{J}}_{1,v,i} \; -\dot{\mathbf{J}}_{1,v,i}] \begin{bmatrix}
+        \mathbf{v}_v + \mathbf{v}_c\\
+        \dot{\mathbf{p}}_i
+    \end{bmatrix} \right).
+\end{equation}
+Here, we applied the following relation
+\begin{equation}
+    [\mathbf{J}_{1,v,i} \; -\mathbf{J}_{1,v,i}]^\dagger = \frac{1}{2}\begin{bmatrix}
+        \mathbf{J}_{1,v,i}^\dagger\\
+        -\mathbf{J}_{1,v,i}^\dagger
+    \end{bmatrix}.
+\end{equation}
+The one-half constant comes from the fact that both vehicles involved in a collision contribute to the avoidance maneuver, and consequently, each vehicle only applies half the control effort. Simulations showed that this scaling is essential for the method's success. If $\mathbf{p}_i$ is an external obstacle we do not apply the one-half scaling. After applying the \gls{soclik} solution, the desired \gls{colav} acceleration is
+\begin{equation}\label{eq:high:priority_colav_controller}
+    \dot{\mathbf{v}}_{1,v,i} =     -k_{scale}\hat{\mathbf{r}}_{v,i}\left( \lambda_{p,1} \Tilde{\sigma}_{1,v,i} + \hat{\mathbf{r}}_{v,i}\T\lambda_{d,1}\bigl(\mathbf{v}_v + \mathbf{v}_c - \dot{\mathbf{p}}_i\bigr) + \dot{\hat{\mathbf{r}}}_{v,i}\T \bigl(\mathbf{v}_v+\mathbf{v}_c - \dot{\mathbf{p}}_i\bigr)\right),
+\end{equation}
+where
+\begin{equation}
+    k_{scale} = \begin{cases}
+    \frac{1}{2}, \quad \text{Vehicle $i$ is part of fleet,}\\
+    1, \quad \text{otherwise.}
+    \end{cases}
+\end{equation}
+
+The ocean-current velocity appears in this equation, but only in terms that describe the relative velocity between the vehicle and obstacle $\bigl(\mathbf{v}_v+\mathbf{v}_c - \dot{\mathbf{p}}_i\bigr)$. If the relative velocity can be measured directly, an estimate of the ocean current is not necessary. Otherwise, the ocean-current observer from Section~\ref{sec:ocean_current_observer} can be applied.
+
+
+In the case of multiple obstacles acting simultaneously, the closest obstacle is prioritized. We apply the iterative null-space projection for each obstacle ordered by distance, with the closest obstacle first so that it has the highest priority. For instance, in the case of two obstacles in collision range, the final commanded acceleration for a vehicle $v$ is
+\begin{equation}
+    \bm{\mu}_v = \dot{\mathbf{v}}_{NSB,v} = \dot{\mathbf{v}}_{1,v,1} + \mathbf{N}_{1,v,1}\dot{\mathbf{v}}_{1,v, 2} + \Bar{\mathbf{N}}_{1,v,2} \bigl(\dot{\mathbf{v}}_{2,v} + \dot{\mathbf{v}}_{3,v}\bigr).
+\end{equation}
+In this formulation, the third task acceleration is no longer orthogonal to the first task and must be projected into its null space, which results from external obstacles inducing collision avoidance maneuvers that move the barycenter of the fleet.
+
+As discussed in both \cite{arrichiello_formation_2006} and \cite{antonelli_kinematic_2006} the null space projection of this task constrains the lower priority tasks to only produce motion tangent to the unit sphere of radius $d_{COLAV}$ centered at the obstacle. Therefore, singular configurations exist where the desired direction from the other tasks is parallel to $\hat{\mathbf{r}}$. The vehicle will get stuck in these configurations with zero commanded acceleration. This problem is discussed in detail in \cite{antonelli_kinematic_2006}, and in particular, they note that the singular configuration is an unstable stationary point, and any measurement errors or intentional actuator noise may pull the system away.
+

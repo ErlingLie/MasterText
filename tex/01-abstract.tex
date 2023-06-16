@@ -1,0 +1,15 @@
+%!TEX root = ../Thesis.tex
+\chapter*{\englishabstractname}
+\addcontentsline{toc}{chapter}{\englishabstractname}
+%
+This thesis presents a novel control law for formation path following with \glspl{auv} using a second-order \gls{nsb} method. \glspl{auv} pose unique challenges in formation control due to their nonlinear and underactuated nature. This thesis aims to leverage the input-output linearizing hand-position controller to enable the application of formation control methods designed for double-integrator systems, that would otherwise not be applicable to \glspl{auv}.
+
+The main contribution of this work is the extension of the \gls{nsb} method to directly handle the inherent second-order dynamics of \glspl{auv}, addressing the double-integrator nature of the system. By directly accounting for these dynamics, the method eliminates the presence of hidden dynamics from low-level control, encountered in first-order methods. The control algorithm utilizes a hand-position controller that transforms the underactuated six-degrees-of-freedom AUV model into a double-integrator system. The \gls{nsb} method is a behavioral control algorithm that enables the creation of a hierarchy of prioritized tasks. To solve the formation-path-following problem, we create three tasks: collision avoidance, formation keeping, and path following. The second-order formulation enables the expression of all dynamics directly in task space.
+
+The method is initially developed centralized, closely linked to the first-order \gls{nsb} methods in the literature.  However, due to practical limitations in real-world applications, a novel distributed version of the \gls{nsb} algorithm is proposed. This distributed method reformulates the formation-keeping task as a consensus problem, enabling different communication topologies without requiring each vehicle to communicate with all others. The control law leverages techniques from sliding mode control to eliminate errors resulting from non-complete communication graphs.
+
+The closed-loop formation-control and path-following systems are analyzed using Lyapunov theory. The centralized method is shown to give a \gls{usges} system while the decentralized method is shown to provide trajectories that are ultimately bounded to an arbitrarily small set depending on the approximation of the switching term in the sliding mode controller. With an ideal switching controller, the system is shown to be asymptotically stable.
+
+The method's effectiveness is then demonstrated through extensive MATLAB simulation studies. Both the centralized and distributed methods are tested under a range of different scenarios, and the distributed method is compared with existing methods from the literature. The second-order \gls{nsb} method is demonstrated to have lower steady-state errors compared to other methods. The results demonstrate the potential of the second-order \gls{nsb} method for achieving accurate formation control and path following with \glspl{auv}.
+%
+\clearpage

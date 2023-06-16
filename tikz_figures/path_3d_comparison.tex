@@ -1,0 +1,210 @@
+% This file was created by matlab2tikz.
+%
+%The latest updates can be retrieved from
+%  http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz
+%where you can also make suggestions and rate matlab2tikz.
+%
+\definecolor{mycolor1}{rgb}{0.00000,0.44700,0.74100}%
+\definecolor{mycolor2}{rgb}{0.85000,0.32500,0.09800}%
+\definecolor{mycolor3}{rgb}{0.92900,0.69400,0.12500}%
+\definecolor{mycolor4}{rgb}{0.49400,0.18400,0.55600}%
+%
+\begin{tikzpicture}
+
+\begin{axis}[%
+% unit vector ratio*=1 1 1,
+width=\figurewidth,
+height=0.794\figureheight,
+at={(0\figurewidth,0\figureheight)},
+scale only axis,
+plot box ratio=6.842 5.397 1,
+xmin=-95.0778035133361,
+xmax=95.1001524564096,
+tick align=outside,
+xlabel style={font=\color{white!15!black}},
+xlabel={East [m]},
+ymin=-69.9951943051704,
+ymax=80,
+ylabel style={font=\color{white!15!black}},
+ylabel={North [m]},
+z dir=reverse,
+zmin=-9.16458892913122,
+zmax=18.6292631457881,
+zlabel style={font=\color{white!15!black}},
+zlabel={Depth [m]},
+view={-86.2420632235235}{20},
+axis background/.style={fill=white},
+title style={font=\bfseries},
+title={\textbf{Trajectory}},
+axis x line*=bottom,
+axis y line*=left,
+axis z line*=left,
+xmajorgrids,
+ymajorgrids,
+zmajorgrids,
+legend style={legend cell align=left, align=left, draw=white!15!black, legend columns=5,font=\footnotesize}
+]
+\addplot3 [color=mycolor1, line width=1.0pt, mark size=3.5pt, mark=*, mark options={solid, fill=mycolor1, mycolor1}, mark repeat= 50]
+ table[] {path_3d_comparison-1.tsv};
+ \addlegendentry{AUV 1}
+
+\addplot3 [color=mycolor2, line width=1.0pt, mark size=3.5pt, mark=*, mark options={solid, fill=mycolor2, mycolor2}, mark repeat= 50]
+ table[] {path_3d_comparison-2.tsv};
+ \addlegendentry{AUV 2}
+
+\addplot3 [color=mycolor3, line width=1.0pt, mark size=3.5pt, mark=*, mark options={solid, fill=mycolor3, mycolor3}, mark repeat= 50]
+ table[] {path_3d_comparison-3.tsv};
+ \addlegendentry{AUV 3}
+
+\addplot3 [color=mycolor4, line width=1.0pt, mark size=3.5pt, mark=*, mark options={solid, fill=mycolor4, mycolor4}, mark repeat= 50]
+ table[] {path_3d_comparison-4.tsv};
+ \addlegendentry{AUV 4}
+
+\addplot3 [color=black, line width=1.5pt]
+ table[] {path_3d_comparison-5.tsv};
+ \addlegendentry{Path}
+
+\addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-6.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-7.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-8.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-9.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-10.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-11.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-12.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-13.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-14.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-15.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-16.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-17.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-18.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-19.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-20.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-21.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-22.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-23.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-24.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-25.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-26.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-27.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-28.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-29.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-30.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-31.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-32.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-33.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-34.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-35.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-36.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-37.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-38.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-39.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-40.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-41.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-42.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-43.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-44.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-45.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-46.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-47.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-48.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-49.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-50.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-51.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-52.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-53.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-54.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-55.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-56.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-57.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-58.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-59.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-60.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-61.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-62.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-63.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-64.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-65.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-66.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-67.tsv};
+ \addplot3 [color=black, dotted, line width=0.8pt]
+ table[] {path_3d_comparison-68.tsv};
+ \end{axis}
+
+\begin{axis}[%
+width=1.32\figurewidth,
+height=1.32\figureheight,
+at={(-0.172\figurewidth,-0.286\figureheight)},
+scale only axis,
+xmin=0,
+xmax=1,
+ymin=0,
+ymax=1,
+axis line style={draw=none},
+ticks=none,
+axis x line*=bottom,
+axis y line*=left
+]
+\end{axis}
+\end{tikzpicture}%

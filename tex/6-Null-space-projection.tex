@@ -1,0 +1,119 @@
+\chapter{Null-Space-Projection}\label{cha:nsp}
+An important prerequisite to understanding the \gls{nsb} method is to understand the null-space-projection method for task priority control of robot manipulators. The main concepts in the \gls{nsb} method were first developed for robot manipulators and then applied to coordination tasks in fleets of autonomous mobile robots. Our extended \gls{nsb} method for double integrator systems is also inspired by similar, existing second-order methods in robot manipulators. 
+
+The chapter is organized as follows. Sections~\ref{sec:nsp_first_order}-\ref{sec:NSB_first_order} are background theory sections. Sections~\ref{sec:nsp_first_order} and \ref{sec:nsp_second_order} present task priority control with null-space-projection as developed for robot-manipulators \citep{siciliano_differential_2009, chiaverini_kinematically_2008}. Section~\ref{sec:NSB_first_order} details and discusses the first-order \gls{nsb} algorithm for coordinated path-following control as presented in existing literature \citep{arrichiello_formation_2006, antonelli_kinematic_2006, matous_singularity-free_2022}. Section~\ref{sec:nsb_second_order} presents our novel method for \gls{nsb} control with double-integrator systems.
+
+
+\section{Null-space-projection for first-order systems}\label{sec:nsp_first_order}
+The null-space-projection method was derived for redundant robot manipulators. The method enables the creation of additional objectives that are followed as well as possible, without conflicting with the main objective. Because the manipulators are redundant, there will always be a null space of joint velocities that only affect the internal motion of the robot arm without affecting the end-effector motion. Additional tasks can be constructed in this null space such as obstacle- or singularity-avoidance. This section introduces the null-space-projection method as derived for robot manipulators. We refer to \cite{siciliano_differential_2009} and \cite{chiaverini_kinematically_2008} for further reading. The notation differs from the sources to remain consistent with the rest of our work.
+
+We consider single-integrator (first-order) systems on the form
+\begin{equation}
+    \dot{\mathbf{x}} = \mathbf{v},
+\end{equation}
+where $\mathbf{x}$ are the generalized coordinates of the system. We define task variables $\bm{\sigma}_i = f_i(\mathbf{x})$, with the desired values $\bm{\sigma}_{d, i}$. A typical choice of task variable for robot manipulators would be the end-effector position. Using the chain rule, the time derivative of the task variables is given by
+\begin{equation}
+    \dot{\bm{\sigma}}_i = \mathbf{J}_i \mathbf{v},
+\end{equation}
+where $\mathbf{J}_i = \partial \bm{\sigma}_i /\partial \mathbf{x}$ is the task Jacobian. Because the system is redundant, there exists a vector space of feasible velocities that satisfy the task given by a desired task-space velocity $\dot{\bm{\sigma}}_1^*$:
+\begin{equation}
+    \mathbf{v} = \mathbf{J}_1^\dagger \dot{\bm{\sigma}}_1^* + \mathbf{N}_1 \mathbf{v}_0,\label{eq:null_space_projection_method}
+\end{equation}
+where $\mathbf{J}_i^\dagger$ is the Moore-Penrose pseudo-inverse, and $\mathbf{N}_i = (\mathbf{I} - \mathbf{J}_i^\dagger \mathbf{J}_i)$ is a null-space projection matrix of $\mathbf{J}_i$ so that $\mathbf{J}_i \mathbf{N}_i = 0$. Because the additional velocities $\mathbf{v}_0$ are projected into the null space of the first task, they will not conflict with the fulfillment of that task.
+
+Given an additional task defined by the task variable $\bm{\sigma}_2$, the optimal value of the additional velocity $\mathbf{v}_0$ is derived. First, to not violate the first objective, it must hold that:
+\begin{equation}
+    \dot{\bm{\sigma}}_2 = \mathbf{J}_2 \mathbf{v} = \mathbf{J}_2 \bigl( \mathbf{J}_1^\dagger \dot{\bm{\sigma}}_1 + \mathbf{N}_1 \mathbf{v}_0 \bigr).
+\end{equation}
+Solving for $\mathbf{v}_0$ gives
+\begin{equation}\label{eq:null-space-velocity}
+    \mathbf{v}_0 = (\mathbf{J_2} \mathbf{N_1})^\dagger\bigl(\dot{\bm{\sigma}}_2^* - \mathbf{J}_2 \mathbf{J}_1^\dagger \dot{\bm{\sigma}}_1^*\bigr).
+\end{equation}
+The term $- \mathbf{J}_2 \mathbf{J}_1^\dagger \dot{\bm{\sigma}}_1^*$ can be interpreted as subtracting the parts of the second task that are already satisfied by the first task. The pseudo-inverse term $(\mathbf{J_2} \mathbf{N_1})^\dagger$ optimizes the velocity $\mathbf{v}_0$ to satisfy the second task as well as possible within the null space of the first task.
+
+Back-substituting \eqref{eq:null-space-velocity} into \eqref{eq:null_space_projection_method} gives
+\begin{equation}\label{eq:NSP_two_tasks}
+    \mathbf{v} = \mathbf{J}_1^\dagger \bm{\sigma}_1^* + \mathbf{N}_1 (\mathbf{J_2} \mathbf{N_1})^\dagger\bigl(\dot{\bm{\sigma}}_2^* - \mathbf{J}_2 \mathbf{J}_1^\dagger \dot{\bm{\sigma}}_1^*\bigr).
+\end{equation}
+If there are more than two tasks, the lower-priority tasks must be projected into the joint null space spanned by the stacked Jacobian of all higher-priority tasks. That leads to the following recursive solution:
+\begin{equation}\label{eq:nsp_recursive}
+    \mathbf{v} = \sum_{i=1}^{n_t} \bar{\mathbf{N}}_{i-1} \mathbf{v}_i, \quad \mathrm{with} \; \mathbf{v}_i = \left(\mathbf{J_i} \bar{\mathbf{N}}_{i-1}\right)^\dagger\left(\dot{\bm{\sigma}}_i^* - \mathbf{J}_i \sum_{k=1}^{i-1} \bar{\mathbf{N}}_{k-1} \mathbf{v}_k\right),
+\end{equation}
+with $\bar{\mathbf{N}}_i$ being the null-space projection of the stacked Jacobian $\bar{\mathbf{J}}_i = [\mathbf{J}_1\T\, \ldots \, \mathbf{J}_{i}\T]\T$.
+
+\section{Null-space-projection for second-order systems}\label{sec:nsp_second_order}
+All mechanical systems that obey Newton's second law are inherently second-order, meaning they follow double-integrator dynamics. The first-order method derived in the previous section works well because there often exist controllers that enable us to accurately track desired velocities. Nevertheless, modeling the second-order dynamics enables us to interpretably express the dynamic motion in task space.
+
+We consider a double-integrator (second-order) system on the form
+\begin{align}\label{eq:double_integrator}
+    \dot{\mathbf{x}} &= \mathbf{v},\\
+    \dot{\mathbf{v}} &= \mathbf{a}.
+\end{align}
+With the definition of task variables $\bm{\sigma}_i$ from Section \ref{sec:nsp_first_order} the following differential relation holds
+\begin{equation}
+    \ddot{\bm{\sigma}}_i = \mathbf{J}_i \dot{\mathbf{v}} + \dot{\mathbf{J}}_i \mathbf{v}.
+\end{equation}
+With a similar derivation as for the single-integrator case, the desired accelerations given two tasks are
+\begin{equation}
+    \dot{\mathbf{v}} = \mathbf{J}_1^\dagger (\ddot{\bm{\sigma}}_1^* -\dot{\mathbf{J}}_1 \mathbf{v}) + \mathbf{N}_1 (\mathbf{J_2} \mathbf{N_1})^\dagger\bigl(\ddot{\bm{\sigma}}_2^*  - \dot{\mathbf{J}}_2 \mathbf{v} - \mathbf{J}_2 \mathbf{J}_1^\dagger (\ddot{\bm{\sigma}}_1^* - \dot{\mathbf{J}}_1 \mathbf{v})\bigr).
+\end{equation}
+
+For multiple tasks, the recursive formulation is similar to the one derived for single-integrator systems \eqref{eq:nsp_recursive}:
+\begin{equation}
+     \dot{\mathbf{v}} = \sum_{i=1}^{n_t} \bar{\mathbf{N}}_{i-1} \dot{\mathbf{v}}_i, \quad \mathrm{with} \; \dot{\mathbf{v}}_i = \left(\mathbf{J_i} \bar{\mathbf{N}}_{i-1}\right)^\dagger\left(\ddot{\bm{\sigma}}_i^* - \dot{\mathbf{J}}_i \mathbf{v} - \mathbf{J}_i \sum_{k=1}^{i-1} \bar{\mathbf{N}}_{k-1} \dot{\mathbf{v}}_k\right).
+\end{equation}
+
+
+\section{NSB method for first-order systems}\label{sec:NSB_first_order}
+In the formation control literature, a slightly different method called the \gls{nsb} method is commonly applied for formation control. The general method is presented and motivated in \cite{chiaverini_singularity-robust_1997} as a way to eliminate the problems resulting from \textit{algorithmic singularities} in \eqref{eq:NSP_two_tasks}. An \textit{algorithmic singularity} occurs when $\mathbf{J}_2 \mathbf{N}_1$ looses rank despite $\mathbf{J}_1$ and $\mathbf{J}_2$ being full rank. This loss of rank happens if the task Jacobians are linearly dependent.
+
+The \gls{nsb} formulation which solves the \textit{algorithmic singularity} problem is given by
+\begin{equation}\label{eq:NSB_two_tasks}
+    \mathbf{v} = \mathbf{v}_1 + \mathbf{N}_1\mathbf{v}_2, \quad \mathrm{with} \quad \mathbf{v}_i = \mathbf{J}_i^\dagger \dot{\bm{\sigma}}_i^*.
+\end{equation}
+This formulation has a slightly different interpretation. The optimal velocity for the second task is first calculated globally, $\mathbf{v}_2 = \mathbf{J}_2^\dagger \bm{\sigma}_2^*$, and then projected into the null space of the first task, which is in contrast to the method \eqref{eq:NSP_two_tasks}, in which the second task velocity is optimized directly within the null space of the first task. Consequently, method \eqref{eq:NSB_two_tasks} leads to larger task errors for the second task but avoids the problems of algorithmic singularities.
+
+To recover the errors, the method is used with a \gls{clik} implementation, which enables the recovery of the tracking errors. The \gls{clik} solution is defined by choosing $\bm{\sigma}_i^*$ as follows:
+\begin{equation}
+    \bm{\sigma}_i^* = \dot{\bm{\sigma}}_{d,i} - \bm{\Lambda}_i \Tilde{\bm{\sigma}}_i,
+\end{equation}
+where $\bm{\Lambda}_i$ is a positive definite gain matrix and $\Tilde{\bm{\sigma}}_i = \bm{\sigma}_i - \bm{\sigma}_{d,i}$. We can interpret the \gls{clik} as a linear feedback law in task space.
+
+Most formation control literature concerning the \gls{nsb} algorithm presents the following recursive formulation for more than two tasks \citep{arrichiello_formation_2006, antonelli_kinematic_2006,matous_singularity-free_2022}:
+\begin{equation}
+    \mathbf{v} = \mathbf{v}_1 + \mathbf{N}_1\left(\mathbf{v}_2 + \mathbf{N}_2 \mathbf{v}_3\right).\label{eq:NSB_wrong}
+\end{equation}
+The formulation has a nice geometrical interpretation, in which the velocity of each task is projected into the null space of the immediate higher-priority task to remove those velocity components that would conflict with it. A problem with this formulation is that it does not behave fully as one might expect. The expected behavior is that the third task produces velocities that neither conflict with the first nor the second task. However, the null-space projection of $\mathbf{N}_2 \mathbf{v}_3$ into the null space of the first task, $\mathbf{N}_1\mathbf{N}_2 \mathbf{v}_3$, might produce motions that are no longer in the null space of the second task and therefore conflict with it. \cite{antonelli_stability_2008} remark that the \textit{correct} projection is given by:
+\begin{equation}
+    \mathbf{v} = \mathbf{v}_1 + \mathbf{N}_1 \mathbf{v}_2 + \bar{\mathbf{N}}_2\mathbf{v}_3,\label{eq:correct_NSB}
+\end{equation}
+with $\bar{\mathbf{N}}_2$ being the null-space projection of the stacked Jacobian $\bar{\mathbf{J}}_2 = [\mathbf{J}_1\T\, \mathbf{J}_{2}\T]\T$. Unlike the former formulation, this formulation projects the velocity from the third task into the joint null space of the two first tasks so that it does not conflict with either of them. Furthermore, \cite{antonelli_stability_2008} argue that the former approach only is stable whenever two out of the three tasks are \textit{orthogonal}, however, in that case, the two formulations are equivalent. Also, \cite{antonelli_stability_2008} presented general stability conclusions of the formulation \eqref{eq:correct_NSB} when extended to $N$ tasks and argued that similar general stability conclusions cannot be made for the formulation \eqref{eq:NSB_wrong}. The formulation \eqref{eq:correct_NSB} is preferable when there are non-orthogonal tasks, and will be used herein, but we note that in most formation control applications, the two formulations are equivalent due to orthogonality in task definitions.
+
+In summary, the general \gls{nsb} method for $n_t$ tasks is given by
+\begin{equation}\label{eq:NSB_first_order_general}
+    \mathbf{v} = \sum_{i=1}^{n_t} \bar{\mathbf{N}}_{i-1}\mathbf{v}_i, \quad \mathrm{with} \quad \mathbf{v}_i = \mathbf{J}_i^\dagger\dot{\bm{\sigma}}_i^*.
+\end{equation}
+\section{NSB method for second-order systems}\label{sec:nsb_second_order}
+We develop the \gls{nsb} method for double-integrator systems \eqref{eq:double_integrator} by applying a similar solution to the \textit{algorithmic singularity} problem as presented in Section~\ref{sec:NSB_first_order} to the second-order method from Section~\ref{sec:nsp_second_order}. The general method is given by
+\begin{equation}\label{eq:NSB_second_order_general}
+    \dot{\mathbf{v}} = \sum_{i=1}^{n_t} \bar{\mathbf{N}}_{i-1}\dot{\mathbf{v}}_i, \quad \mathrm{with} \quad \dot{\mathbf{v}}_i = \mathbf{J}_i^\dagger\left(\ddot{\bm{\sigma}}_i^*-\dot{\mathbf{J}}_i \mathbf{v}\right).
+\end{equation}
+
+Similarly to Section~\ref{sec:NSB_first_order}, we introduce feedback in task space to recover tracking errors. Since the underlying system \eqref{eq:double_integrator} is second-order, we define a second-order linear controller
+\begin{equation}
+       \ddot{\bm{\sigma}}_i^* = \ddot{\bm{\sigma}}_{d,i} - \bm{\Lambda}_{p,i} \Tilde{\bm{\sigma}}_i - \bm{\Lambda}_{d,i} \dot{\Tilde{\bm{\sigma}}}_i.
+\end{equation}
+The resulting \gls{soclik} solution is given by:
+\begin{equation}\label{eq:SOCLIK}
+    \dot{\mathbf{v}}_i =  \mathbf{J}_i^\dagger\left(\ddot{\bm{\sigma}}_{d,i} - \bm{\Lambda}_{p,i} \Tilde{\bm{\sigma}}_i - \bm{\Lambda}_{d,i} \dot{\Tilde{\bm{\sigma}}}_i-\dot{\mathbf{J}}_i \mathbf{v}\right).
+\end{equation}
+where $\bm{\Lambda}_{p,i}$ and $\bm{\Lambda}_{d,i}$ are positive definite gain matrices. As with other second-order systems, $\bm{\Lambda}_{p,i}$ and $\bm{\Lambda}_{d,i}$ can be selected to specify closed-loop natural frequencies and relative damping ratios:
+\begin{equation}
+    \bm{\Lambda}_{p,i} = \bm{\Omega}_{n,i}^2, \quad \bm{\Lambda}_{d,i} = 2\mathbf{Z} \bm{\Omega}_{n,i},
+\end{equation}
+with
+\begin{align}
+    \bm{\Omega}_{n,i} = \mathrm{diag}\{\omega_{n_{i,1}} \ldots \omega_{n_{i,t_i}} \},\\
+    \mathbf{Z} = \mathrm{diag}\{\zeta_{i,1} \ldots \zeta_{i,t_i} \},
+\end{align}
+where $\omega_{n_{i,j}}$ and $\zeta_{i,j}$ are the natural frequency and damping ratio for the $j$-th state of task $i$, and  $t_i$ is the dimension of task $i$. Because mechanical systems described by Newton-Euler equations are second-order, the entire error dynamics of the task are interpretably specified as spring-damper systems in task space. In contrast, the first-order method given by \eqref{eq:NSB_first_order_general} gives a first-order error system in task space which will have additional error dynamics from the low-level velocity controller. 

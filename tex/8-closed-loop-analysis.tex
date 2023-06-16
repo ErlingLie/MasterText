@@ -1,0 +1,313 @@
+\chapter{Closed-Loop Analysis of the Centralized NSB Method}\label{cha:closed_loop}
+The closed-loop stability analysis is an essential step in the design of control systems. In this chapter, we will analyze the stability properties of the proposed formation control system for a fleet of autonomous vehicles. Specifically, we will study the stability of the formation-keeping and path-following task and also the boundedness of the internal states of the hand-position feedback-linearization model. The stability analysis will be conducted using Lyapunov theory, a powerful tool for the analysis of nonlinear systems. Most of the results from this chapter have been submitted to the 62nd IEEE Conference on Decision and Control \citep{lie_formation_2023}.
+
+For the analysis, we assume that the vehicle is operating under safe conditions, that is, no collision avoidance task is active. As established in Section~\ref{sec:combined_NSB}, the formation-keeping and path-following tasks are orthogonal because they produce common accelerations for the entire fleet and relative accelerations within the fleet. Since the collision avoidance task is inactive, the control action $\bm{\mu}$ defined in \eqref{eq:combined_control_action} can be simplified to
+\begin{equation}
+    \bm{\mu} = \dot{\mathbf{v}}_{NSB} = \dot{\mathbf{v}}_2 + \dot{\mathbf{v}}_3,
+\end{equation}
+where $\dot{\mathbf{v}}_2$ and $\dot{\mathbf{v}}_3$ are the task accelerations given by \eqref{eq:saturated_formation_keeping} and \eqref{eq:path_following_task_acceleration}. As a result of the orthogonality, there exist the following independence relations
+\begin{align}
+    \ddot{\bm{\sigma}}_2 &= \mathbf{J}_2\dot{\mathbf{v}}_2 + \mathbf{J}_2\dot{\mathbf{v}}_3 = \mathbf{J}_2\dot{\mathbf{v}}_2,\label{eq:formation_independence}\\
+    \dot{\mathbf{v}}_b &= \frac{1}{n}\sum_{i=1}^n (\dot{\mathbf{v}}_2 + \dot{\mathbf{v}}_3) = \frac{1}{n}\sum_{i=1}^n \dot{\mathbf{v}}_3 = \dot{\mathbf{v}}_{LOS}.
+\end{align}
+Consequently, the stability properties of each task can be studied independently.
+
+The chapter is organized as follows. Section~\ref{sec:closed_loop_formation_keeping} investigates the closed-loop stability properties of the formation-keeping task using Lyapunov theory and LaSalle's invariance principle. Section~\ref{sec:closed_loop_path_following} investigates the closed-loop stability properties of the path-following task using cascaded system theory. Finally, Section~\ref{sec:boundedness_internal} analyzes the boundedness of the internal states of the hand-position feedback linearized system under the \gls{nsb} controller.
+
+\section{Stability of the formation-keeping task}\label{sec:closed_loop_formation_keeping}
+We recall the formation-keeping task variable $\bm{\sigma}_2$ defined in \eqref{eq:formation_keeping_task_variable} and its desired value $\bm{\sigma}_{d,2}$ defined in \eqref{eq:formation_keeping_desired_task_variable}. This section analyses the stability properties of the task error $\Tilde{\bm{\sigma}}_2 = \bm{\sigma}_2 - \bm{\sigma}_{d,2}$ using Lyapunov theory. 
+
+The closed-loop dynamics of the formation-task error are found by inserting the task acceleration \eqref{eq:saturated_formation_keeping} into the second derivative of the task variable \eqref{eq:formation_independence}. The resulting closed-loop system is given by
+\begin{equation}
+    \label{eq:task_error_closed_loop}
+    \ddot{\Tilde{\bm{\sigma}}}_2 = - v_{2_{\max}}\mathrm{sat}\bigl(\mathbf{\Lambda}_{p,2}\Tilde{\bm{\sigma}}_2\bigr) - \mathbf{\Lambda}_{d,2} \dot{\Tilde{\bm{\sigma}}}_2.
+\end{equation}
+
+We note the following relation which will be used to find a suitable Lyapunov function
+\begin{equation}
+    \frac{\partial}{\partial \mathbf{x}} \log \left(\cosh{\|\mathbf{x}\|}\right) = \mathbf{x}\frac{\tanh{\|\mathbf{x}\|}}{\|\mathbf{x}\|} = \mathrm{sat}\bigl(\mathbf{x}\bigr).
+\end{equation}
+
+\begin{theorem}\label{theorem:formation_keeping}
+    Let $\mathbf{\Lambda}_{p,2}, \, \mathbf{\Lambda}_{d,2}$ be two symmetric positive definite matrices so that the product $\mathbf{\Lambda}_{p,2} \mathbf{\Lambda}_{d,2}$ is symmetric positive definite. Then, $\bigl[\dot{\Tilde{\bm{\sigma}}}_2\T,\, \Tilde{\bm{\sigma}}_2\T\bigr]\T = \mathbf{0}$ is a \gls{ugas} equilibrium of the closed-loop system \eqref{eq:task_error_closed_loop}.
+\end{theorem}
+
+\begin{proof}
+Consider the Lyapunov function
+    \begin{equation}
+  V(\Tilde{\bm{\sigma}}_2, \dot{\Tilde{\bm{\sigma}}}_2)  = v_{2,\max}\log\left(\cosh{\|\mathbf{\Lambda}_{p,2}\Tilde{\bm{\sigma}}_{2}\|}\right)+ \frac{1}{2}\dot{\Tilde{\bm{\sigma}}}_2\T\mathbf{\Lambda}_{p,2}\dot{\Tilde{\bm{\sigma}}}_2.
+\end{equation}
+
+The time derivative of $V$ along the trajectories of \eqref{eq:task_error_closed_loop} is given by
+\begin{equation}
+\begin{split}
+    \dot{V} =\, & v_{2,\max}\mathrm{sat}\left(\mathbf{\Lambda}_{p,2}\Tilde{\bm{\sigma}}_{2}\right)\T \mathbf{\Lambda}_{p,2} \dot{\Tilde{\bm{\sigma}}}_2 \\&-
+    \dot{\Tilde{\bm{\sigma}}}_2\T \mathbf{\Lambda}_{p,2}\left(v_{2,\max}\mathrm{sat}\left(\mathbf{\Lambda}_{p,2}\Tilde{\bm{\sigma}}_{2}\right) + \mathbf{\Lambda}_{d,2}\dot{\Tilde{\bm{\sigma}}}_2)\right),\\
+    =\,&-\dot{\Tilde{\bm{\sigma}}}_2\T\mathbf{\Lambda}_{p,2} \mathbf{\Lambda}_{d,2}\dot{\Tilde{\bm{\sigma}}}_2.
+    \end{split}
+\end{equation}
+Let $S = \{\bigl[\dot{\Tilde{\bm{\sigma}}}_2\T,\, \Tilde{\bm{\sigma}}_2\T\bigr]\T \in \mathbb{R}^{6(n-1)} \colon \dot{V} = 0\}$. Because of the dynamics \eqref{eq:task_error_closed_loop}, no other solution can stay identically in $S$, other than the trivial solution $\bigl[\dot{\Tilde{\bm{\sigma}}}_2\T,\, \Tilde{\bm{\sigma}}_2\T\bigr]\T \equiv \mathbf{0}$. Thus, the origin is globally asymptotically stable according to \cite[Corollary 4.2]{khalil_nonlinear_2002}. Furthermore, because \eqref{eq:task_error_closed_loop} is time-invariant, the equilibrium is \gls{ugas}.
+\end{proof}
+
+\section{Stability of the path-following task}\label{sec:closed_loop_path_following}
+This section studies the stability of the path-following error $\mathbf{p}_b^p$ defined in \eqref{eq:barycenter_path_tangential}. The section will use cascaded-system theory and rely on results from \cite{matous_singularity-free_2022}.
+
+First, we define the error system. Let the derivative of the path-following error be given by
+\begin{subequations}\label{eq:path_following_error_system}
+\begin{align}
+    \begin{split}
+        \dot{\mathbf{p}}_b^p &= f(\cdot) + g(\cdot) \Tilde{\mathbf{v}}_b,\\
+            &= \mathbf{R}_p\T(\mathbf{v}_b \!+\! \mathbf{v}_c\!-\!\dot{\mathbf{p}}_p) +  \bigl(\mathbf{S}(\omega_p \dot{\xi})\bigr)\T\mathbf{R}_p\T(\mathbf{p}_b - \mathbf{p}_p),\\
+            &= \mathbf{R}_p\T(\mathbf{v}_{LOS,d} -\dot{\mathbf{p}}_p) - \mathbf{S}(\omega_p \dot{\xi})\mathbf{p}_b^p +\mathbf{R}_p\T\Tilde{\mathbf{v}}_b,\label{eq:path_error_dynamics}
+    \end{split}\\
+        \dot{\Tilde{\mathbf{v}}}_b &= h(\tilde{\mathbf{v}}_b,\cdot),\label{eq:velocity_pertubation}
+\end{align}
+\end{subequations}
+where $\Tilde{\mathbf{v}}_b = \mathbf{v}_b + \mathbf{v}_c - \mathbf{v}_{LOS,d}$ is the barycenter-velocity error. We recall that $\mathbf{v}_{LOS,d}$ is given by \eqref{eq:desired_LOS_non_adaptive}. The dynamics \eqref{eq:velocity_pertubation} of $\Tilde{\mathbf{v}}_b$ differ depending on the choice of ocean-current compensation method. They are given by \eqref{eq:integral_closed_loop} or \eqref{eq:controller_observer_closed_loop} for the choice of integral compensation or ocean-current observer, respectively. For both choices, the origin $\Tilde{\mathbf{v}}_b = \mathbf{0}$ is an exponentially stable equilibrium as proved in Section~\ref{sec:integral_action} and \ref{sec:ocean_current_observer}.
+
+\begin{theorem}\label{theorem:path_following}
+    Let $\tilde{\mathbf{v}}_b = \mathbf{0}$ be a \gls{uges} equilibrium  of \eqref{eq:velocity_pertubation}. Then, $[\Tilde{\mathbf{v}}_b\T, \,(\mathbf{p}_b^p)\T]\T$ is a \gls{usges} and \gls{ugas} equilibrium  of the system \eqref{eq:path_following_error_system}.
+\end{theorem}
+
+\begin{proof}
+    The system \eqref{eq:path_following_error_system} is in a cascaded form where the velocity error $\tilde{\mathbf{v}}$ from \eqref{eq:velocity_pertubation} perturbs the system \eqref{eq:path_error_dynamics}. By assumption, the dynamics of \eqref{eq:velocity_pertubation} are \gls{uges}. The nominal system \eqref{eq:path_error_dynamics} with $\Tilde{\mathbf{v}}_b = 0$ and path-parameter update $\dot{\xi}$ given by \eqref{eq:path_update} was proved to be \gls{usges} in \cite{matous_singularity-free_2022} using the Lyapunov function
+    \begin{equation}
+    V(\mathbf{p}_b^p) = \frac{1}{2} \left(\mathbf{p}_b^p\right)\T\mathbf{p}_b^p.
+    \end{equation}
+
+    For completeness, we present the proof here. The time derivative of $V$ is given by
+    \begin{equation}
+        \begin{split}
+        \dot{V} &= (\mathbf{p}_b^p)^T \bigl(\mathbf{R}_p^T(\mathbf{v}_{LOS,d} -\dot{\mathbf{p}}_p) - \mathbf{S}(\omega_p \dot{\xi})\mathbf{p}_b^p\bigr),\\
+        &= (\mathbf{p}_b^p)^T\mathbf{R}_p^T(\mathbf{v}_{LOS,d} -\dot{\mathbf{p}}_p).
+        \end{split}
+    \end{equation}
+    We note that $\mathbf{R}^T_p \dot{\mathbf{p}}_p$ is the derivative of the origin of the path-tangential coordinate frame expressed in path-tangential coordinates. By the definition of the frame, the direction of the derivative is the x-direction. Thus, the following holds
+    \begin{equation}
+        \mathbf{R}^T_p \dot{\mathbf{p}}_p = \left\| \frac{\partial \mathbf{p}_p}{\partial \xi}\right\| \dot{\xi} \,\left[ 1,0,0 \right]\T.
+    \end{equation}
+    Furthermore, inserting for $\dot{\xi}$ from \eqref{eq:path_update} we get
+    \begin{equation}
+        \mathbf{R}^T_p \dot{\mathbf{p}}_p = U_{LOS} \left (\frac{\Delta(\mathbf{p}_b^p)}{D} + k_\xi\frac{x_b^p}{\sqrt{1 + (x_b^p)^2}} \right ) \,\left[ 1,0,0 \right]\T.
+    \end{equation}
+
+    We recall the \gls{los} velocity
+    \begin{equation}
+        \mathbf{v}_{LOS,d} = \mathbf{R}_p \left[ \Delta(\mathbf{p}_b^p), -y_b^p, -z_b^p \right]\T \frac{U_{LOS}}{D}.
+    \end{equation}
+    After cancellations in the x-coordinate, the derivative of the Lyapunov function becomes
+    \begin{equation}
+        \dot{V} = -U_{LOS}\left( k_\xi \frac{(x_b^p)^2}{\sqrt{1 + (x_b^p)^2}} + \frac{(y_b^p)^2}{D} + \frac{(z_b^p)^2}{D}\right ).
+    \end{equation}
+    For any $\mathbf{p}_b^p \in \{\mathbf{p}_b^p \in \mathbb{R}^3: \| \mathbf{p}_b^p \| \leq r\}$ we have
+    \begin{equation}
+        \dot{V} \leq - U_{LOS} k_r \| \mathbf{p}_b^p\|^2,
+    \end{equation}
+    where $k_r = \min \left\{k_\xi \frac{1}{\sqrt{1 + r^2}}, \frac{1}{\sqrt{\Delta_0 + 2r^2}}\right\}$. All assumptions of \cite[Theorem 5]{pettersen_lyapunov_2017} are thus satisfied, and the origin of the nominal system is \gls{usges}.
+
+    Therefore, according to \cite[Proposition 9]{pettersen_lyapunov_2017} the cascaded system is \gls{usges} and \gls{ugas} if the following two assumptions hold
+
+    \begin{enumerate}
+    \item  There exist constants $c_1,\, c_2,\, \eta > 0$ such that
+    \begin{gather}
+        \left \| \frac{\partial V}{\partial \mathbf{p}_b^p}\right \| \left \|\mathbf{p}_b^p \right \| \leq c_1 V(\mathbf{p}_b^p), \quad \forall \|\mathbf{p}_b^p\| \geq \eta,\\
+        \left \| \frac{\partial V}{\partial \mathbf{p}_b^p}\right \| \leq c_2, \quad \forall \|\mathbf{p}_b^p\| \leq \eta.
+    \end{gather}\label{assumption:cascaded_one}
+
+\item \label{assumption:cascaded_two}
+    There exist two continuous functions $\alpha_1, \, \alpha_2 : \mathbb{R}_{\geq0} \rightarrow \mathbb{R}_{\geq0}$, such that $\mathbf{g}(\cdot)$ satisfies
+    \begin{equation}\label{eq:cascaded_assumption_two}
+        \|g(\cdot)\| \leq \alpha_1(\|\Tilde{\mathbf{v}}\|) + \alpha_2(\|\Tilde{\mathbf{v}}\|)\|\mathbf{p}_b^p\|.
+    \end{equation}
+\end{enumerate}
+
+Because $\|\partial V/\partial \mathbf{p}_b^p\| = \|\mathbf{p}_b^p\|$, \ref{assumption:cascaded_one}) holds with $c_1 = 2, \, c_2 = \eta$ for any $\eta \in \mathbb{R}_{\geq 0}$.
+
+Equation \eqref{eq:cascaded_assumption_two} is satisfied with $\alpha_1(\|\Tilde{\mathbf{v}}\|) = 1, \alpha_2(\|\Tilde{\mathbf{v}}\|) = 0$, because $\|g(\cdot)\| = \|\mathbf{R}_p\T\| = 1$. As a result, all assumptions of \cite[Proposition 9]{pettersen_lyapunov_2017} are satisfied, and the origin of the closed-loop path-following system~\eqref{eq:path_following_error_system} is \gls{usges} and \gls{ugas}.
+\end{proof}
+
+
+\section{Boundedness of the internal states}\label{sec:boundedness_internal}
+This section will investigate the boundedness of the internal states of the hand-position feedback linearization controller \eqref{eq:hand_linearized_system}. The internal states are $\mathbf{R}$ and $\bm{\omega}$, however only $\bm{\omega}$ can grow unbounded because $\mathbf{R}$ is defined on the closed space $\mathbf{SO}(3)$. The proof will closely follow \cite[Proposition 2 and 3]{matous_trajectory_2023}, but we include all steps for completeness. This entire section considers a single vehicle so subscripts will be omitted for simplicity.
+
+First, Proposition 2 from \cite{matous_trajectory_2023} holds for our \gls{nsb} controller without modification, so we simply restate it here. By the choice of the control law \eqref{eq:roll_torque}, the dynamics of the roll rate no longer depend on the other angular velocities. From \eqref{eq:internal_dynamics}, we get
+    \begin{equation}
+        \begin{split}
+            \dot{p} &= - \mathbf{e}_1\T \left(\mathcal{D}_{\bm{\omega}}(\bm{\zeta}) + \mathbf{M}_{22}^{\prime}\left(Wz_{gb} \mathbf{e}_3 \times \mathbf{R}\T \mathbf{e}_3\right)\right) \\
+                &= - \frac{d_{44}}{m_{44}} p - \frac{1}{m_{44}} \mathbf{e}_1\T \left(Wz_{gb} \mathbf{e}_3 \times \mathbf{R}\T \mathbf{e}_3\right).
+        \end{split}
+    \end{equation} 
+    
+    We define
+\begin{equation}
+    a_x = \frac{d_{44}}{m_{44}}, \quad b_x = \frac{W z_{gb}}{m_{44}},
+\end{equation}
+and restate the following proposition:
+
+\begin{proposition}[Proposition 2, \cite{matous_trajectory_2023}]\label{proposition:roll_rate}
+The roll rate dynamics are bounded if $a_x > 0$.
+Specifically, the trajectory $p(t)$ satisfies
+\begin{equation}
+    |p(t)| \leq |p(0)|\mathrm{e}^{-a_x t} + \frac{b_x}{a_x}\left(1 - \mathrm{e}^{-a_x t}\right).
+\end{equation}
+\end{proposition}
+\begin{proof}  Consider the following two functions
+        \begin{align}
+            V_{p} &= \frac{1}{2} p^2, &
+            W_{p} &= \sqrt{2 V_{p}}.
+        \end{align}
+        The following inequality holds for the derivative of $W_p$ along the trajectories of $p$
+        \begin{equation}
+            \dot{W}_p \leq -a_xW_p + b_x.
+        \end{equation}
+        By applying the comparison lemma, we get
+        \begin{equation}
+            W_p(t) = \abs{p(t)} \leq \abs{p(0)}{\rm e}^{-a_xt} + \frac{b_x}{a_x}\left(1 - {\rm e}^{-a_xt}\right),
+        \end{equation}
+        which concludes the proof.
+\end{proof}
+
+Now, we investigate the boundedness of $q$ and $r$. The proof closely follows Proposition 3 from \cite{matous_trajectory_2023}, but we include some of the omitted steps and modify the proof to work with our \gls{nsb} controller \eqref{eq:combined_control_action}.
+
+The  dynamics for $q$ and $r$ are obtained from \eqref{eq:internal_dynamics}:
+\begin{equation}
+    \begin{bmatrix}
+    \dot{q}\\ \dot{r}
+    \end{bmatrix}
+    = \begin{bmatrix}
+        0 & 0 & -\tfrac{1}{h}\\ 0 & \tfrac{1}{h} & 0
+    \end{bmatrix}\left (\mathbf{R}\T\bm{\mu} + \mathcal{D}_{\bm{\nu}} (\bm{\zeta}_r) + \mathcal{C}_{\bm{\nu}} (\bm{\zeta}_r) - \bm{\omega} \times \mathbf{R}\T \mathbf{v}\right ).
+\end{equation}
+The linear velocities can be expressed in terms of the external states
+\begin{equation}
+    \bm{\nu}_r = \bm{\nu}_e - \bm{\omega} \times \mathbf{L},
+\end{equation}
+with the external part of the linear velocities given by
+\begin{equation}
+    \bm{\nu}_e = \mathbf{R}\T \mathbf{v}.
+\end{equation}
+The norm of $\bm{\nu}_e$ can be bounded by
+\begin{equation}\label{eq:nu_norm_bound}
+    \| \bm{\nu}_e \| \leq \| \Tilde{\bm{\nu}}_e \| + \| \dot{\mathbf{p}}_d - \mathbf{v}_c \|,
+\end{equation}
+where $\dot{\mathbf{p}}_d$ is the derivative of the desired position $\mathbf{p}_d = \mathbf{p}_p(\xi) + \mathbf{R}_p \mathbf{p}_f^f$ and $\Tilde{\bm{\nu}}_e$ is a velocity error term due to transients in the path-following and formation-keeping tasks. Under the controller \eqref{eq:combined_control_action} with the formation-keeping acceleration \eqref{eq:saturated_formation_keeping} and path-following acceleration \eqref{eq:path_following_task_acceleration} the external dynamics are \gls{ugas} following Theorems~\ref{theorem:formation_keeping} and \ref{theorem:path_following}. Consequently, $\| \Tilde{\bm{\nu}}_e \|$ will asymptotically converge to zero.
+
+Note that because the path function is continuous and infinitely differentiable and thanks to the choice of the path parameter update law \eqref{eq:path_update}, the time-derivatives of $\mathbf{p}_{{d}}$ are bounded
+\begin{equation}\label{eq:desired_velocity_bound}
+    \|\dot{\mathbf{p}}_{d}(t)\| \leq \bar{\dot{\mathbf{p}}}_{d}, \quad \|\ddot{\mathbf{p}}_{d}(t)\| \leq \bar{\ddot{\mathbf{p}}}_{d}.
+\end{equation}
+
+Consider the Lyapunov function candidate
+\begin{equation}
+    V_\omega = \frac{1}{2}(q^2 + r^2).
+\end{equation}
+We let $\hat{\bm{\omega}} = [q, \, r]^T$. The derivative is given by
+\begin{equation}\label{eq:interal_lyapunov_dot}
+    \begin{split}
+        \dot{V}_\omega = &-a_y q^2 - a_z r^2 + a_{xyz}pqr\\
+        &+ a_{ye}\bm{\nu}_{e_1} q^2+ a_{xy} \bm{\nu}_{e_2} pq + a_{xz}\bm{\nu}_{e_3} pr + a_{ze} \bm{\nu}_{e_1}r^2\\
+        &+a_{ey} \bm{\nu}_{e_1}\bm{\nu}_{e_3}q+ a_{ley}\bm{\nu}_{e_3}q+ a_{ez}\bm{\nu}_{e_1}\bm{\nu}_{e_2}r + a_{lez} \bm{\nu}_{e_2}r\\
+        &+\begin{bmatrix}
+            0& -\tfrac{r}{h} & +\tfrac{q}{h}
+        \end{bmatrix} (\bm{\omega} \times \bm{\nu}_e)+ \begin{bmatrix}
+            0& \tfrac{r}{h} & -\tfrac{q}{h}
+        \end{bmatrix}\mathbf{R}^T \bm{\mu} . 
+    \end{split}
+\end{equation}
+The coefficient definitions are found in Appendix \ref{appendix:coefficients}. We bound the derivative by the following inequality
+    \begin{equation}\label{eq:internal_lyapunov_bound}
+    \begin{split}
+        \dot{V}_\omega \leq &-a_y q^2 - a_z r^2 + a_{xyz}pqr\\
+        &+ a_{ye}\bm{\nu}_{e_1} q^2 + a_{xy} \bm{\nu}_{e_2} pq + a_{xz}\bm{\nu}_{e_3} pr + a_{ze} \bm{\nu}_{e_1}r^2\\
+        &+a_{ey} \bm{\nu}_{e_1}\bm{\nu}_{e_3}q+ a_{ez}\bm{\nu}_{e_1}\nu{e_2}r\\
+        &+\|\bm{\nu}_e \| \|\hat{\bm{\omega}} \| \left(\frac{\|\bm{\omega}\|}{h} + a_e \right) + \| \hat{\bm{\omega}}\| \frac{\|\mu\|}{h},
+    \end{split}
+\end{equation}
+with $a_e =\max \{a_{ley}, a_{lez}\}$.
+
+\begin{theorem}\label{theorem:angular_velocities}
+        Let us define
+        \begin{subequations}
+            \begin{align}
+                \Bar{p} &= b_x / a_x, \qquad
+                \Bar{\mathbf{v}} = \max_{t \in \mathbb{R}_{\geq 0}}\norm{\dot{\mathbf{p}}_{{\rm d},i}(t) - \mathbf{v}_c}, \\
+                \Bar{\alpha}_y &= a_y - \left(\frac{1}{h}\,\Bar{\mathbf{v}} + \frac{1}{2}\abs{a_{xyz}\Bar{p}} + \abs{a_{ye}\Bar{\mathbf{v}}}\right), \\
+                \Bar{\alpha}_z &= a_z - \left(\frac{1}{h}\,\Bar{\mathbf{v}} + \frac{1}{2}\abs{a_{xyz}\Bar{p}} + \abs{a_{ze}\Bar{\mathbf{v}}}\right).
+            \end{align} \label{eq:a_bounds}
+        \end{subequations}
+
+        \noindent The angular rate dynamics are ultimately bounded if $a_x, \Bar{\alpha}_y, \Bar{\alpha}_z > 0$.
+\end{theorem}
+
+\begin{proof}
+    Consider the Lyapunov function $V_\omega$ and the bound on its derivative in \eqref{eq:internal_lyapunov_bound}. We apply the following identities
+\begin{subequations}
+    \begin{align}
+        \| \bm{\omega} \| \| \hat{\bm{\omega}}\| &\leq (|p| + \|\hat{\bm{\omega}}\|) \| \hat{\bm{\omega}}\|,\\
+        |pqr| & \leq \frac{1}{2}|p|(q^2 + r^2),
+    \end{align}
+\end{subequations}
+to derive the following (looser) upper bound on $\dot{V}_{\omega}$
+\begin{equation}\label{eq:internal_lyapunov_strict_bound}
+    \dot{V}_\omega \leq -\alpha_y q^2 - \alpha_z r^2 + G\left(\bm{\nu}_e, \bm{\omega}, \bm{\mu}\right).
+\end{equation}
+
+The coefficients $\alpha_y$ and $\alpha_z$ are given by
+\begin{subequations}\label{eq:alpha_y_alpha_z}
+    \begin{align}
+        \alpha_y &= a_y - \left(\frac{1}{h}\|\bm{\nu}_e\| + \frac{1}{2}|a_{xyz}| |p| + |a_{ye}| \| \bm{\nu}_e\| \right),\\
+        \alpha_z &= a_z - \left(\frac{1}{h}\|\bm{\nu}_e\| + \frac{1}{2}|a_{xyz}| |p| + |a_{ze}| \| \bm{\nu}_e\| \right),
+    \end{align}
+\end{subequations}
+and $G(\cdot)$ represents the terms that grow at most linearly with $q$ and $r$
+\begin{equation}
+\begin{split}
+    G(\bm{\nu}_e, \bm{\omega}, \mu) = &\left(\left(\frac{|p|}{h} + a_e \right)\| \bm{\nu}_e\| + \frac{\|\mu\|}{h}\right)\|\hat{\bm{\omega}}\|\\
+    &+\bigl(a_{ey} \bm{\nu}_{e_1}\bm{\nu}_{e_3} + a_{xy} \bm{\nu}_{e_2}p\bigr)q+ \bigl(a_{ez}\bm{\nu}_{e_1}\bm{\nu}_{e_2} + a_{xz}\bm{\nu}_{e_3}p\bigr)r.
+    \end{split}
+\end{equation}
+
+From Proposition~\ref{proposition:roll_rate}, we can conclude that if $a_x > 0$, then 
+\begin{equation}
+    \lim_{t\rightarrow \infty} |p(t)| \leq \bar{p}.
+\end{equation}
+The limit converges exponentially. As a result, in the limit, $\Bar{\alpha}_y$ and $\Bar{\alpha}_z$ from \eqref{eq:a_bounds} form lower bounds on $\alpha_y$ and $\alpha_z$ from \eqref{eq:alpha_y_alpha_z}
+\begin{equation}
+    \lim_{t\rightarrow \infty} \alpha_y \geq \Bar{\alpha}_y, \quad \lim_{t\rightarrow \infty} \alpha_z \geq \Bar{\alpha}_z.
+\end{equation}
+Therefore, if $\bar{\alpha}_y, \Bar{\alpha}_z > 0$, then there exists a finite time $T$ after which $\alpha_y, \alpha_z > 0$.
+
+We examine the linear term $G(\cdot)$. We note that the control action $\bm{\mu}$ is bounded by 
+\begin{equation}\label{eq:mu_bound}
+    \| \bm{\mu}(t) \| \leq \beta(\mathbf{p}_b (0), \bm{\Tilde{\sigma}}_2 (0),t) + \| \ddot{\mathbf{p}}_d\|,
+\end{equation}
+where $\beta(\cdot, t)$ is a class $\mathcal{KL}$ function \citep[definition 4.3]{khalil_nonlinear_2002} such that
+\begin{equation}
+    \lim_{t\rightarrow \infty} \beta(\mathbf{p}_b (0), \bm{\Tilde{\sigma}}_2 (0),t) = 0.
+\end{equation}
+Inserting for this bound as well as \eqref{eq:desired_velocity_bound}, $G(\cdot)$ is bounded as follows
+\begin{equation}
+\begin{split}
+        G(\bm{\nu}_e, \bm{\omega}, \mu) \leq \bar{G}(\bm{\omega}) \coloneqq &\left(\left(\frac{\hat{p}}{h} + a_e \right)\hat{\bm{\nu}}_e + \frac{\beta(\cdot,0) + \bar{\ddot{\mathbf{p}}}_d}{h}\right)\|\hat{\bm{\omega}}\|\\
+    &+\bigl(a_{ey} \hat{\bm{\nu}}_e^2 + a_{xy} \hat{\bm{\nu}}_e\hat{p}\bigr)q + \bigl(a_{ez}\hat{\bm{\nu}}_e^2 + a_{xz}\hat{\bm{\nu}}_e\hat{p}\bigr)r\\
+    \leq & \;a_G \| \hat{\bm{\omega}}\|,
+    \end{split}
+\end{equation}
+where $\hat{\bm{\nu}}_e = \bar{\bm{\nu}}_e + \|\bm{\nu}_e (0)\|$ is an upper bound on $\| \bm{\nu}_e\|$ and $\hat{p} = \bar{p} + |p(0)|$ is an upper bound on $|p|$ and
+\begin{equation}
+    a_G \!=\!  \left|\left(\frac{\hat{p}}{h} + a_e \right)\hat{\bm{\nu}}_e + \frac{\beta(\cdot,0) + \bar{\ddot{\mathbf{p}}}_d}{h}\right| +  \max \left\{\left|a_{ey} \hat{\bm{\nu}}_e^2 + a_{xy} \hat{\bm{\nu}}_e\hat{p}\right|,  \left|a_{ez}\hat{\bm{\nu}}_e^2 + a_{xz}\hat{\bm{\nu}}_e\hat{p}\right| \right \}.
+\end{equation}
+
+We investigate the candidate Lyapunov function for $t < T$. Since $\alpha_y$ and $\alpha_z$ may be negative, we cannot prove boundedness. However, we note that the derivative of the Lyapunov function \eqref{eq:internal_lyapunov_strict_bound} has the following form
+\begin{equation}
+    \dot{V}_\omega \leq k_1 \| \hat{\bm{\omega}}\|^2 + a_G \| \hat{\bm{\omega}}\|,
+\end{equation}
+where $k_1$ is a positive constant. We can therefore conclude that the dynamics of $q$ and $r$ are forward complete \citep{angeli_forward_1999}, which means that there exists a solution globally, for positive time. 
+
+For $t \geq T$, $\dot{V}_\omega$ has the following form
+\begin{equation}
+    \dot{V}_\omega \leq -\alpha_y q^2 - \alpha_z r^2 + a_G \| \hat{\bm{\omega}}\|.
+\end{equation}
+For sufficiently large angular velocities, the quadratic term will dominate the linear term $a_G \| \hat{\bm{\omega}}\|$, and $q$ and $r$ will remain bounded.
+\end{proof}
+

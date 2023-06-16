@@ -1,0 +1,160 @@
+\chapter{The Distributed NSB Method}\label{cha:distributed_NSB}
+The second-order \gls{nsb} method as presented so far is a centralized method. Consequently, it might be difficult to implement the control law in practice because it would require perfect and continuous communication. In this chapter, we propose a novel distributed version of the controller. Other distributed versions of the algorithm have been developed, and in particular, \cite{matous_formation_2023} formulated a distributed version of the first-order \gls{nsb} method. For comparison, we also extend this method to work in the second-order setting.
+
+In the novel distributed formulation, the key insight is recognizing that the formation-keeping task can be treated as a consensus algorithm on a fully-connected graph. Consensus methods, discussed in Section~\ref{sec:literature_review}, are widely used in distributed control laws for formation control. Leveraging this concept, the proposed distributed version of the \gls{nsb} method for \glspl{auv} presented  herein offers a notable advantage. It only necessitates the communication of the path-progress variable $\xi$ with neighboring vehicles, along with measurements of their relative positions and velocities. This approach significantly reduces the communication requirements while still achieving effective formation control.
+
+The subsequent sections detail each of the tasks collision avoidance, formation keeping, and path following for the novel distributed method. The combined control law for vehicle $i$ is given by 
+\begin{equation}\label{eq:distributed_NSB_controller}
+    \bm{\mu}_i = \dot{\mathbf{v}}_{1,i} + \mathbf{N}_{1,i}(\dot{\mathbf{v}}_{2,i}+\mathbf{N}_{2,i}\dot{\mathbf{v}}_{3,\{i, \mathcal{N}_i\}}),
+\end{equation}
+where each of the task accelerations $\dot{\mathbf{v}}_{k,i}, k\in \{1,2,3\}$ will be detailed in the following sections. $\dot{\mathbf{v}}_{3,\{i, \mathcal{N}_i\}}$ are the \gls{los} accelerations from vehicle $i$ and all its neighbors.
+
+In the final section, we demonstrate how the distributed first-order method can be extended to work with the second-order \gls{nsb} algorithm. This extension provides an alternative approach to transitioning from a centralized to a distributed controller and demonstrates the main ideas of how it has been done in earlier works.
+
+\section{Collision-avoidance task}
+For the collision avoidance task, we leverage that the collision avoidance task from \cite{arrichiello_formation_2006}, which was rewritten for our second-order \gls{nsb} method in Section~\ref{sec:individual_colav}, is inherently distributed. The task can be applied without any modifications and ensures collision safety from other vehicles within the fleet and external obstacles. A drawback of the task formulation that is even more critical in a distributed setting is that vehicles may leave communication range when avoiding external obstacles. This drawback could be amended by modifying the task to also activate when the distance between two neighboring vehicles increases above a communication range threshold $d_{COM}$.\looseness=-1
+
+\section{Formation-keeping task}
+In this section, we show that the formation-keeping task is in fact a consensus law. Consensus laws are known to be inherently distributed.
+
+We restate the nominal formation-keeping acceleration \eqref{eq:formation_keeping_controller}
+\begin{equation}
+    \dot{\mathbf{v}}_2 = \mathbf{J}_2^\dagger \bigl(\ddot{\bm{\sigma}}_{d,2} - \mathbf{\Lambda}_{p,2}\Tilde{\bm{\sigma}}_2 - \mathbf{\Lambda}_{d,2} \dot{\Tilde{\bm{\sigma}}}_2\bigl).
+\end{equation}
+The key insight lies in the following relationship: $\mathbf{J}_2^\dagger\mathbf{J}_2 = \tfrac{1}{n}(\mathbf{L}_F\otimes \mathbf{I}_3)$, where $\mathbf{L}_F$ is the Laplacian matrix of the fully connected graph consisting of all agents. The task variables can be written as 
+\begin{equation}
+    \mathbf{\sigma}_2 = \mathbf{J}_2\mathbf{p}, \quad \dot{\mathbf{\sigma}}_2 = \mathbf{J}_2\mathbf{v}, \quad \ddot{\mathbf{\sigma}}_2 = \mathbf{J}_2\dot{\mathbf{v}}.
+\end{equation}
+Then, if the gain matrices are chosen as multiples of the identity matrix $\bm{\Lambda} = \lambda \mathbf{I}$, the \gls{soclik} equation \eqref{eq:formation_keeping_controller} can be rewritten as
+\begin{equation}\label{eq:formation_keeping_consensus_form_complete_grah}
+    \dot{\mathbf{v}}_2 = \frac{1}{n}(\mathbf{L}_F\otimes \mathbf{I}_3)\left(\dot{\mathbf{v}}_d - \lambda_{p,2}(\mathbf{p}-\mathbf{p}_d) - \lambda_{d,2}(\mathbf{v} - \mathbf{v}_d)\right),
+\end{equation}
+where
+\begin{equation}\label{eq:desired_formation}
+    \mathbf{p}_{d,i} = \mathbf{p}_p + \mathbf{R}_p(\hat{\xi}) \mathbf{p}_{f,i}^f, \quad \mathbf{v}_{d,i} = \mathbf{v}_p + \dot{\mathbf{R}}_p(\hat{\xi}) \mathbf{p}_{f,i}^f, \quad \dot{\mathbf{v}}_{d,i} = \dot{\mathbf{v}}_p + \ddot{\mathbf{R}}_p(\hat{\xi}) \mathbf{p}_{f,i}^f.
+\end{equation}
+For complete graphs, the following holds for the terms representing the desired formation acceleration:
+\begin{equation}\label{eq:desired_formation_ddot}
+    \frac{1}{n}(\mathbf{L}_{F,i}\otimes\mathbf{I}_3)\dot{\mathbf{v}}_d = \ddot{\mathbf{R}}_p\left(\frac{n-1}{n} \mathbf{p}_{f,i}^f - \frac{1}{n}\sum_{j\in \mathcal{N}_i} \mathbf{p}_{f,j}^f\right) = \ddot{\mathbf{R}}_p\mathbf{p}_{f,i}^f \coloneqq \dot{\Tilde{\mathbf{v}}}_{d,i},
+\end{equation}
+where $\mathbf{L}_{F,i}$ denotes the $i$-th row of $\mathbf{L}_F$. Thus, we can simplify \eqref{eq:formation_keeping_consensus_form_complete_grah} to the following form:
+\begin{equation}\label{eq:formation_keeping_consensus_form_complete_grah2}
+    \dot{\mathbf{v}}_2 = \dot{\Tilde{\mathbf{v}}}_{d} -\frac{1}{n}(\mathbf{L}_F\otimes \mathbf{I}_3)\left(\lambda_{p,2}(\mathbf{p}-\mathbf{p}_d) + \lambda_{d,2}(\mathbf{v} - \mathbf{v}_d)\right).
+\end{equation}
+
+For non-complete graphs, we let the normalized Laplacian be given by
+\begin{equation}
+    \hat{\mathbf{L}} \coloneqq \mathrm{diag}\left(\frac{1}{|\mathcal{N}_1|+1},\, \ldots, \,\frac{1}{|\mathcal{N}_n|+1}\right) \mathbf{L},
+\end{equation}
+and rewrite \eqref{eq:formation_keeping_consensus_form_complete_grah2}:
+\begin{equation}\label{eq:formation_keeping_consensus_form}
+    \dot{\mathbf{v}}_2 = \dot{\Tilde{\mathbf{v}}}_{d}
+ - (\hat{\mathbf{L}}\otimes \mathbf{I}_3)\left(\lambda_{p,2}(\mathbf{p}-\mathbf{p}_d) + \lambda_{d,2}(\mathbf{v} - \mathbf{v}_d)\right),
+\end{equation}
+
+The rewritten \gls{soclik} equation \eqref{eq:formation_keeping_consensus_form} can be recognized as a consensus algorithm similar to the general form \eqref{eq:first_order_consensus}, and is equivalently written
+\begin{equation}
+\begin{split}
+     \dot{\mathbf{v}}_{2,i} = 
+     &\dot{\Tilde{\mathbf{v}}}_{d}
+     - \lambda_{p,2}\frac{1}{|\mathcal{N}_i|+1}\sum_{j\in \mathcal{N}_i}(\mathbf{p}_i - \mathbf{p}_j-\mathbf{p}_{d,i} + \mathbf{p}_{d,j})\\
+     &- \lambda_{d,2}\frac{1}{|\mathcal{N}_i|+1}\sum_{j\in \mathcal{N}_i}(\mathbf{v}_i-\mathbf{v}_j - \mathbf{v}_{d,i} + \mathbf{v}_{d,j}).
+ \end{split}
+\end{equation}
+The null-space projector of the task in terms of the graph Laplacian is given by:
+\begin{equation}\label{eq:distributed_formation_null_space}
+    \mathbf{N}_2 = \mathbf{I}_{3n} - \hat{\mathbf{L}}\otimes \mathbf{I}_3. 
+\end{equation}
+Multiplying with this matrix is equivalent to taking the mean \gls{los} accelerations of an \gls{auv} and its neighbors. It only projects into the null space of the local formation-keeping task consisting of a vehicle and its neighbors, and some formation errors may result from the path-following task in spite of the null-space projection. Due to the nature of the \gls{los} task, this error is bounded. It can therefore be eliminated by introducing a sliding-mode-like switching term to the formation-keeping acceleration \eqref{eq:formation_keeping_consensus_form}:
+\begin{equation}
+\begin{split}
+     \dot{\mathbf{v}}_2 = &\dot{\Tilde{\mathbf{v}}}_{d} -(\hat{\mathbf{L}}\otimes \mathbf{I}_3)\left(\lambda_{p,2}(\mathbf{p}-\mathbf{p}_d) + \lambda_{d,2}(\mathbf{v} - \mathbf{v}_d)\right) \\
+     &-\gamma \mathrm{sign}\left((\hat{\mathbf{L}}\otimes \mathbf{I}_3)(\lambda_{p,2}(\mathbf{p}-\mathbf{p}_d) + \lambda_{d,2}(\mathbf{v} - \mathbf{v}_d))\right).
+\end{split}
+\end{equation}
+Furthermore, we add the saturation term from the centralized version of the controller following the same arguments as in the centralized case:
+\begin{equation}\label{eq:distributed_formation_acceleration}
+\begin{split}
+     \dot{\mathbf{v}}_2 = &\dot{\Tilde{\mathbf{v}}}_{d} - v_{2,\max}\mathrm{sat}(\lambda_{p,2}(\hat{\mathbf{L}}\otimes \mathbf{I}_3)(\mathbf{p}-\mathbf{p}_d)) - \lambda_{d,2}(\hat{\mathbf{L}}\otimes \mathbf{I}_3)(\mathbf{v} - \mathbf{v}_d)  \\
+     &-\gamma \mathrm{sign}\left(v_{2,\max}\mathrm{sat}(\lambda_{p,2}(\hat{\mathbf{L}}\otimes \mathbf{I}_3)(\mathbf{p}-\mathbf{p}_d)) + \lambda_{d,2}(\hat{\mathbf{L}}\otimes \mathbf{I}_3)(\mathbf{v} - \mathbf{v}_d)\right).
+\end{split}
+\end{equation}
+
+\section{Path-following task}
+In the distributed path-following approach, each vehicle utilizes the \gls{los} law with ocean-current observer \eqref{eq:LOS_dynamics_observer} derived for the centralized algorithm. We apply a constant look ahead distance $\Delta = \Delta_0$ for simplicity. In the LOS-law, we shall replace $\mathbf{p}_b^p$ with
+\begin{equation}\label{eq:barycenter-estimate-novel}
+    \tilde{\mathbf{p}}_i^p = \mathbf{R}_p\T(\xi_i) (\mathbf{p}_i - \mathbf{p}_p(\xi_i)) -  \mathbf{p}_{f,i}^f.
+\end{equation}
+With this choice, $\tilde{\mathbf{p}}_i^p = \mathbf{p}_b^p$ when the fleet has reached the desired formation.
+
+The desired \gls{los} velocity is then given by
+\begin{equation}\label{eq:desired_LOS_non_adaptive}
+    \mathbf{v}_{LOS,d,i} = \mathbf{R}_p[\Delta, \, -y_{b,i}^p, -z_{b,i}^p]\T\frac{U_{LOS}}{D_i},
+\end{equation}
+and the commanded acceleration is given by
+\begin{equation}\label{eq:distributed_v3_dot}
+    \dot{\mathbf{v}}_{3,i} = \dot{\mathbf{v}}_{LOS,d,i} + \bm{\Lambda}_{LOS} \left(\mathbf{v}_{LOS,d,i} - \tilde{\mathbf{v}}_i^p -\hat{\mathbf{v}}_{c,i}\right).
+\end{equation}
+
+The path-progress parameters $\xi_i$ for each vehicle are synchronized using the following consensus law from \cite{matous_formation_2023}:
+\begin{equation}\label{eq:path_update_consensus}
+    \dot{\xi}_i = U_{LOS}\left \| \frac{\partial \mathbf{p}_p(\xi_i)}{\partial \xi}\right \|^{-1} \left (\frac{\Delta}{D_i} +  k_\xi\frac{\tilde{x}_{i}^p}{\sqrt{1 + (\tilde{x}_{i}^p)^2}} \right ) + c_\xi \sum_{j\in \mathcal{N}_i} (\xi_j - \xi_i).
+\end{equation}
+The consensus law ensures that the along-path progress remains synchronized for all vehicles.
+
+
+
+In simulations, we experienced better results using the following sliding-mode controller to make the path-following velocity converge to $\mathbf{v}_{LOS}$ compared to analytically differentiating $\mathbf{v}_{LOS}$ like in \eqref{eq:distributed_v3_dot}:
+\begin{equation}\label{eq:sliding_mode_path_following}
+    \dot{\mathbf{v}}_{3,i} = \bm{\Lambda}_{LOS}(\mathbf{v}_{LOS,d,i} - \mathbf{v}_i - \dot{\mathbf{R}}_p \mathbf{p}_{f,i}^f) - \gamma_3\mathrm{sign}(\mathbf{v}_{LOS,d,i} - \mathbf{v}_i - \dot{\mathbf{R}}_p \mathbf{p}_{f,i}^f).
+\end{equation}
+The rationale behind this choice is that when the formation task is at steady state, the total velocity can be decomposed into formation-keeping and path-following velocity:
+\begin{equation}
+    \mathbf{v}_i = \mathbf{v}_{f,i} +  \mathbf{v}_{p,i} = \dot{\mathbf{R}}_p \mathbf{p}_{f,i}^f + \mathbf{v}_{p,i}.
+\end{equation}
+Using this equation we calculate the desired steady-state path-following velocity $\mathbf{v}_{p,i}$ which we insert in \eqref{eq:sliding_mode_path_following}. When the path-following velocity converges to $\mathbf{v}_{LOS,d}$ for all vehicles, the fleet should eventually approach the desired path.
+
+\section{Alternative distributed NSB}\label{sec:alternative_distributed}
+In this section, we present a different approach to making the second-order \gls{nsb} method distributed. Unlike our previously presented novel approach, this alternative method utilizes consensus laws to update estimates of the barycenter position and velocity, rather than employing a direct consensus control law. The approach follows directly by extending the first-order solution from \cite{matous_formation_2023} to work with our second-order \gls{nsb} algorithm. While we only consider formation-keeping and path-following tasks, it is worth noting that the collision avoidance task can also be adapted in a similar manner as described in \cite{matous_formation_2023}. This section first presents the most important details of the first-order method and then shows how we extend it to work in the second-order context.
+
+ In the first-order method, only an estimate for the barycenter position is needed, and its consensus-based update law is given by
+\begin{equation}
+    \dot{\mathbf{p}}_{b,i} = \mathbf{v}_{LOS,i} + k_{b}(\mathbf{p}_i-\mathbf{R}_p\mathbf{p}_{f,i}^f - \mathbf{p}_{b,i}) +  c_{b}\sum_{j\in\mathcal{N}_i}(\mathbf{p}_{b,j}-\mathbf{p}_{b,i}).
+\end{equation}
+For the path-following task, this estimate is inserted directly into the line-of-sight velocity equation \eqref{eq:desired_LOS} to obtain $\mathbf{v}_{LOS,i}$. The formation-keeping velocity is chosen as
+\begin{equation}
+     \mathbf{v}_{2,i} = \dot{\widehat{\bm{\sigma}}}_{2,i,d} -\bm{\Lambda}_{2}(\widehat{\bm{\sigma}}_{2,i} - \widehat{\bm{\sigma}}_{2,i,d}),
+\end{equation}
+where
+\begin{align}
+    \widehat{\bm{\sigma}}_{2,i} = \mathbf{p}_i - \mathbf{p}_{b,i}, \quad \widehat{\bm{\sigma}}_{2,i,d} = \mathbf{R}_p \mathbf{p}_{f,i}^f.
+\end{align}
+The output of the controller is the total desired velocity of the vehicle, which is forwarded to the low-level control
+\begin{equation}
+    \mathbf{v}_i = \mathbf{v}_{LOS,i} + \mathbf{v}_{2,i}.
+\end{equation}
+
+We modify this approach to work with the second-order method by extending the estimator for the barycenter position to also estimate the barycenter velocity. The update law is given by
+\begin{align}
+\begin{split}
+    \dot{\mathbf{p}}_{b,i} &= \mathbf{v}_{b,i} + k_{b,11}(\mathbf{p}_i-\mathbf{R}_p\mathbf{p}_{f,i}^f - \mathbf{p}_{b,i}) + k_{b,12}(\mathbf{v}_i-\dot{\mathbf{R}}_p\mathbf{p}_{f,i}^f - \mathbf{v}_{b,i})\\
+    &\hphantom{=}\, c_{b,11}\sum_{j\in\mathcal{N}_i}(\mathbf{p}_{b,j}-\mathbf{p}_{b,i}) + c_{b,12}\sum_{j\in\mathcal{N}_i}  (\mathbf{v}_{b,j} - \mathbf{v}_{b,i}),
+\end{split}\\
+\begin{split}
+    \dot{\mathbf{v}}_{b,i} &= \dot{\mathbf{v}}_{LOS,i} + k_{b,21}(\mathbf{p}_i-\mathbf{R}_p\mathbf{p}_{f,i}^f - \mathbf{p}_{b,i}) + k_{b,22}(\mathbf{v}_i-\dot{\mathbf{R}}_p\mathbf{p}_{f,i}^f - \mathbf{v}_{b,i})\\
+    &\hphantom{=}\, c_{b,21}\sum_{j\in\mathcal{N}_i}(\mathbf{p}_{b,j}-\mathbf{p}_{b,i}) +c_{b,22}\sum_{j\in\mathcal{N}_i}  (\mathbf{v}_{b,j} - \mathbf{v}_{b,i}),
+    \end{split}
+\end{align}
+where $k_{b,ij}$ and $c_{b,ij}$ are positive gains. The intuition for the update law is that $\mathbf{p}_i - \mathbf{R}_p \mathbf{p}_{f,i}^f$ and $\mathbf{v}_i-\dot{\mathbf{R}}_p\mathbf{p}_{f,i}^f$ serve as estimates of the barycenter position and velocity for each individual vehicle. This concept aligns with the idea presented in the barycenter estimate from our novel approach \eqref{eq:barycenter-estimate-novel}. Thus, the terms associated with controller gain $k_{b,ij}$ serve as feedback from the vehicle's position and velocity. On the other hand, the terms with gain $c{b,ij}$ act as consensus terms, ensuring that all vehicles eventually converge to the same estimate of the barycenter.
+
+Given the barycenter estimates, the formation-keeping acceleration is given by
+\begin{equation}
+    \dot{\mathbf{v}}_{2,i} = \ddot{\widehat{\bm{\sigma}}}_{2,i,d} - \bm{\Lambda}_{d,2}(\dot{\widehat{\bm{\sigma}}}_{2,i} - \dot{\widehat{\bm{\sigma}}}_{2,i,d}) -v_{2,\max} \mathrm{sat}(\bm{\Lambda}_{p,2}(\widehat{\bm{\sigma}}_{2,i} - \widehat{\bm{\sigma}}_{2,i,d})).
+\end{equation}
+The path-following acceleration is given by directly inserting the barycenter position and velocity estimates $\mathbf{p}_{b,i}$ and $\mathbf{v}_{b,i}$ into the equations of the centralized method \eqref{eq:desired_LOS}, \eqref{eq:desired_LOS_derivative}, and \eqref{eq:LOS_dynamics}. The path-parameter update law is given by \eqref{eq:path_update_consensus}.
+
+Similarly to the centralized method, the final commanded acceleration is the sum of the path-following and formation-keeping accelerations
+\begin{equation}
+    \bm{\mu}_i = \dot{\mathbf{v}}_{2,i} + \dot{\mathbf{v}}_{LOS,i},
+\end{equation}
+which concludes the definition of the controller.
